@@ -277,6 +277,7 @@ def interrupt_handler(signum, frame):
     paho_client.loop_stop()
     
     time.sleep(0.5)
+    print("shutting down...")
     sys.exit(0)
 
 
