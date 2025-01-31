@@ -5,6 +5,7 @@ import datetime
 import glob
 import os
 from pathlib import Path
+import signal
 import ssl
 import struct
 import sys
@@ -269,8 +270,19 @@ def paho_setup(endpoint, port, client_id, root_ca, cert, key):
 
     return mqttc
 
+def interrupt_handler(signum, frame):
+
+    # print(f'Handling signal {signum} ({signal.Signals(signum).name}).')
+
+    paho_client.loop_stop()
+    
+    time.sleep(0.5)
+    sys.exit(0)
+
 
 if __name__ == '__main__':
+
+    signal.signal(signal.SIGINT, interrupt_handler)
 
     ### AWS IOT CONSTANTS (NEED TO PULL FROM ENV)
     # ENDPOINT = 'a1cizoe0dy9v99-ats.iot.us-east-2.amazonaws.com'
