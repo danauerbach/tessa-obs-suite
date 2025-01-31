@@ -17,22 +17,6 @@ from awsiot import mqtt_connection_builder
 from utils.rap import RAPPacket
 
 
-### AWS IOT CONSTANTS (NEED TO PULL FROM ENV)
-CERT = '../awstests/tessa-wg-dev.cert.pem'
-KEY = '../awstests/tessa-wg-dev.private.key'
-# ENDPOINT = 'a1cizoe0dy9v99-ats.iot.us-east-2.amazonaws.com'
-# ENDPOINT = 'iot-nlb-a0a43ed2e3f13805.elb.us-east-2.amazonaws.com'
-# ENDPOINT = '3.136.73.214'
-ENDPOINT = 'iot.tessa-obs.net'
-PORT = 8883
-# ROOT_CA = None # '../awstests/AmazonRootCA1.pem'
-ROOT_CA = '../awstests/AmazonRootCA1.pem'
-CLIENT_ID = 'binary_sender'
-TOPIC = 'tessa/data/raw'
-
-### RAP CONSTANTS
-SYNC_BYTES = b'PT02'
-
 def move_to_next_packet(iobuffer, sync_bytes, start_position=0):
 
     iobuffer.seek(start_position)  # Move to the start position
@@ -162,7 +146,7 @@ def process_file(filename, mqtt_client, debug=False):
         ### TODO: should we wait? Loop?
 
 
-def setup_pub():
+def setup_pub(endpoint, port, client_id, root_ca, cert, key):
 
     # Callback when connection is accidentally lost.
     def aws_on_connection_interrupted(connection, error, **kwargs):
@@ -205,14 +189,14 @@ def setup_pub():
         print("Connection closed")
 
     mqtt_connection = mqtt_connection_builder.mtls_from_path(
-        endpoint=ENDPOINT,
-        port=PORT,
-        cert_filepath=CERT,
-        pri_key_filepath=KEY,
-        ca_filepath=ROOT_CA,
+        endpoint=endpoint,
+        port=port,
+        cert_filepath=cert,
+        pri_key_filepath=key,
+        ca_filepath=root_ca,
         on_connection_interrupted=aws_on_connection_interrupted,
         on_connection_resumed=aws_on_connection_resumed,
-        client_id=CLIENT_ID,
+        client_id=client_id,
         clean_session=False,
         keep_alive_secs=30,
         http_proxy_options=None,
@@ -262,6 +246,38 @@ def move_file_to_sent(filepath: str):
 
 if __name__ == '__main__':
 
+    ### AWS IOT CONSTANTS (NEED TO PULL FROM ENV)
+    # ENDPOINT = 'a1cizoe0dy9v99-ats.iot.us-east-2.amazonaws.com'
+    # ENDPOINT = 'iot-nlb-a0a43ed2e3f13805.elb.us-east-2.amazonaws.com'
+    # ENDPOINT = '3.136.73.214'
+    ENDPOINT = 'iot.tessa-obs.net'
+    PORT = 8883
+
+    ### RAP CONSTANTS
+    SYNC_BYTES = b'PT02'
+
+    aws_dir = os.getenv('TESSA_AWS_DIR')
+    if not aws_dir:
+        print('ERROR: TESSA_AWS_DIR env var does not exist. Quitting...', file=sys.stderr)
+        sys.exit(1)
+    
+    thing_name = os.getenv('TESSA_WG_THING_NAME')
+    if not thing_name:
+        print('ERROR: TESSA_WG_THING_NAME env var does not exist. Quitting....', file=sys.stderr)
+        sys.exit(1)
+
+    DATA_ROOT_DIR = os.getenv('TESSA_DATA_ROOT')
+    if not DATA_ROOT_DIR:
+        print('ERROR: TESSA_DATA_ROOT env var does not exist. Quitting....', file=sys.stderr)
+        sys.exit(1)
+
+    CERT = os.path.join(aws_dir, f'{thing_name}.pem')
+    KEY = os.path.join(aws_dir, f'{thing_name}.private.key')
+    ROOT_CA = os.path.join(aws_dir, 'AmazonRootCA1.pem')
+
+    CLIENT_ID = thing_name
+    TOPIC = 'tessa/data/raw'
+
     parser = argparse.ArgumentParser(description="list Pegasus raw packets in a file(s)")
     parser.add_argument("--debug", "-d", action="store_true", help="Enable debug/verbose mode")
     # parser.add_argument("fileglob", action="store", nargs='+', help="filename(s) to read")
@@ -270,10 +286,6 @@ if __name__ == '__main__':
     # filelist = args.fileglob
     debug = args.debug
 
-    DATA_ROOT_DIR = os.getenv('TESSA_DATA_ROOT')
-    if not DATA_ROOT_DIR:
-        print('ERROR: TESSA_DATA_ROOT DIR DOES NOT EXIST. Nothing to do.', file=sys.stderr)
-        sys.exit(1)
 
 
     while True:
@@ -293,7 +305,7 @@ if __name__ == '__main__':
                 print('FILES: {}'.format(filelist))
 
 
-            mqtt_client = setup_pub()
+            mqtt_client = setup_pub(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
 
             for fn in filelist:
                     
