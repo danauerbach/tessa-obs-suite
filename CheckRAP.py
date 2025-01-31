@@ -603,6 +603,7 @@ def peg_raw_writer(quit_q, data_q, sta_code, write_bin_time_size_min=15, write_b
 
                     pegfl.write(pkt)
                     pegfl.flush()
+                    cur_file_size = pegfl.tell()
 
                 # RAW_DAY_DIR = p.join(RAW_ROOT_DIR, write_bin_start_dt.strftime("%Y-%m-%d"))
                 # if not os.path.exists(RAW_DAY_DIR):
@@ -610,7 +611,7 @@ def peg_raw_writer(quit_q, data_q, sta_code, write_bin_time_size_min=15, write_b
 
                 if ((datetime.now(timezone.utc) - write_bin_start_dt).total_seconds() > \
                         BIN_LEGNTH_MIN * 60)  or \
-                        pegfl.tell() > BIN_SIZE_BYTES:
+                        cur_file_size > BIN_SIZE_BYTES:
                     
                     RAW_DAY_DIR = p.join(output_root, sta_code, 'raw', write_bin_start_dt.strftime("%Y-%m-%d"))
                     if not os.path.exists(RAW_DAY_DIR):
