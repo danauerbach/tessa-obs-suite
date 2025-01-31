@@ -55,10 +55,10 @@ def send_packet(rappkt, sta, mqtt_client, topic, qos, debug=False):
     # jpkt.update(metadata)
     jmsg64 = json.dumps(jpkt)
     
-    pub_future = mqtt_client.publish(topic=topic, payload=jmsg64, qos=qos)
+    #pub_future = mqtt_client.publish(topic=topic, payload=jmsg64, qos=qos)
 
     ### TODO: try/except
-    res = pub_future[0].result()
+    #res = pub_future[0].result()
 
 
 def process_file(filename, mqtt_client, debug=False):
@@ -131,7 +131,7 @@ def process_file(filename, mqtt_client, debug=False):
                 #     handler["method"](rappkt, handler['userdata'], debug)
 
                 print_packet_info(rappkt, debug)
-                send_packet(rappkt, sta_code, mqtt_client, TOPIC, paho_client.QoS.AT_LEAST_ONCE, debug)
+                send_packet(rappkt, sta_code, mqtt_client, TOPIC, 2, debug)
 
             time.sleep(0.1)
 
@@ -246,6 +246,8 @@ def move_file_to_sent(filepath: str):
 
 def paho_setup(endpoint, port, client_id, root_ca, cert, key):
 
+    print(f'paho client setup: {endpoint}, {port}, {client_id}, {root_ca}, {cert}, {key}')
+
     def on_connect(client, userdata, flags, reason_code):
         print(f"Connected with result code {reason_code}")
         # Subscribing in on_connect() means that if we lose the connection and
@@ -295,9 +297,9 @@ if __name__ == '__main__':
         print('ERROR: TESSA_DATA_ROOT env var does not exist. Quitting....', file=sys.stderr)
         sys.exit(1)
 
-    CERT = os.path.join(aws_dir, f'{thing_name}.pem')
+    CERT = os.path.join(aws_dir, f'{thing_name}.cert.pem')
     KEY = os.path.join(aws_dir, f'{thing_name}.private.key')
-    ROOT_CA = os.path.join(aws_dir, 'root-CA.crt')
+    ROOT_CA = os.path.join(aws_dir, 'AmazonRootCA1.pem')
 
     CLIENT_ID = thing_name
     TOPIC = 'tessa/data/raw'
