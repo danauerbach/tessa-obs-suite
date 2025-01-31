@@ -12,7 +12,7 @@ import sys
 import time
 import json
 
-from paho.mqtt import client as paho_client
+import paho.mqtt.client as mqtt
 # from awscrt import mqtt
 # from awsiot import mqtt_connection_builder
 
@@ -260,7 +260,7 @@ def paho_setup(endpoint, port, client_id, root_ca, cert, key):
     def on_message(client, userdata, msg):
         print(msg.topic+" "+str(msg.payload))
 
-    mqttc = paho_client.Client(client_id=client_id)
+    mqttc = mqtt.Client(client_id=client_id)
     mqttc.tls_set(root_ca, certfile=cert, keyfile=key, tls_version=ssl.PROTOCOL_TLSv1_2, cert_reqs=ssl.CERT_REQUIRED)
     mqttc.on_connect = on_connect
     mqttc.on_message = on_message
@@ -274,7 +274,7 @@ def interrupt_handler(signum, frame):
 
     # print(f'Handling signal {signum} ({signal.Signals(signum).name}).')
 
-    paho_client.loop_stop()
+    mqtt_client.loop_stop()
     
     time.sleep(0.5)
     print("shutting down...")
