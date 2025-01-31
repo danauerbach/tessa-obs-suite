@@ -5,14 +5,15 @@ import datetime
 import glob
 import os
 from pathlib import Path
+import ssl
 import struct
 import sys
 import time
 import json
 
-# from paho.mqtt import client as paho_client
-from awscrt import mqtt
-from awsiot import mqtt_connection_builder
+from paho.mqtt import client as paho_client
+# from awscrt import mqtt
+# from awsiot import mqtt_connection_builder
 
 from utils.rap import RAPPacket
 
@@ -39,7 +40,7 @@ def print_packet_info(rappkt: RAPPacket, debug=False):
     print('xmitter:', pkt_info)
 
 
-def send_packet(rappkt: RAPPacket, sta, aws_client, topic: str, qos=mqtt.QoS.AT_LEAST_ONCE, debug: bool =False):
+def send_packet(rappkt, sta, mqtt_client, topic, qos, debug=False):
 
     pkt = rappkt.full_packet()
     # metadata = rappkt.packet_metadata()
@@ -54,7 +55,7 @@ def send_packet(rappkt: RAPPacket, sta, aws_client, topic: str, qos=mqtt.QoS.AT_
     # jpkt.update(metadata)
     jmsg64 = json.dumps(jpkt)
     
-    pub_future = aws_client.publish(topic=topic, payload=jmsg64, qos=mqtt.QoS.AT_LEAST_ONCE)
+    pub_future = mqtt_client.publish(topic=topic, payload=jmsg64, qos=qos)
 
     ### TODO: try/except
     res = pub_future[0].result()
@@ -130,105 +131,105 @@ def process_file(filename, mqtt_client, debug=False):
                 #     handler["method"](rappkt, handler['userdata'], debug)
 
                 print_packet_info(rappkt, debug)
-                send_packet(rappkt, sta_code, mqtt_client, TOPIC, mqtt.QoS.AT_LEAST_ONCE, debug)
+                send_packet(rappkt, sta_code, mqtt_client, TOPIC, paho_client.QoS.AT_LEAST_ONCE, debug)
 
             time.sleep(0.1)
 
         if pegfl.tell() < Path(filename).stat().st_size:
             print('File {fn} not read to the end!!!'.format(fn=filename))
 
-    stats = mqtt_client.get_stats()
-        ###TODO: check for any unpublished packets
-    while stats.incomplete_operation_count > 0:
-        print('Incomplete_operation_count: {ioc}'.format(ioc=stats.incomplete_operation_count))
-        print('Unacked_operation_count: {uoc}'.format(uoc=stats.unacked_operation_count))
-        time.sleep(0.25)
-        ### TODO: should we wait? Loop?
+    # stats = mqtt_client.get_stats()
+    #     ###TODO: check for any unpublished packets
+    # while stats.incomplete_operation_count > 0:
+    #     print('Incomplete_operation_count: {ioc}'.format(ioc=stats.incomplete_operation_count))
+    #     print('Unacked_operation_count: {uoc}'.format(uoc=stats.unacked_operation_count))
+    #     time.sleep(0.25)
+    #     ### TODO: should we wait? Loop?
 
 
-def setup_pub(endpoint, port, client_id, root_ca, cert, key):
+# def setup_pub(endpoint, port, client_id, root_ca, cert, key):
 
-    # Callback when connection is accidentally lost.
-    def aws_on_connection_interrupted(connection, error, **kwargs):
-        print("Connection interrupted. error: {}".format(error))
-
-
-    # Callback when an interrupted connection is re-established.
-    def aws_on_connection_resumed(connection, return_code, session_present, **kwargs):
-        print("Connection resumed. return_code: {} session_present: {}".format(return_code, session_present))
-
-        if return_code == mqtt.ConnectReturnCode.ACCEPTED and not session_present:
-            print("Session did not persist. Resubscribing to existing topics...")
-            resubscribe_future, _ = connection.resubscribe_existing_topics()
-
-            # Cannot synchronously wait for resubscribe result because we're on the connection's event-loop thread,
-            # evaluate result with a callback instead.
-            resubscribe_future.add_done_callback(on_resubscribe_complete)
-
-    def on_resubscribe_complete(resubscribe_future):
-        resubscribe_results = resubscribe_future.result()
-        print("Resubscribe results: {}".format(resubscribe_results))
-
-        for topic, qos in resubscribe_results['topics']:
-            if qos is None:
-                sys.exit("Server rejected resubscribe to topic: {}".format(topic))
+#     # Callback when connection is accidentally lost.
+#     def aws_on_connection_interrupted(connection, error, **kwargs):
+#         print("Connection interrupted. error: {}".format(error))
 
 
-    # Callback when the connection successfully connects
-    def aws_on_connection_success(connection, callback_data):
-        assert isinstance(callback_data, mqtt.OnConnectionSuccessData)
-        print("Connection Successful with return code: {} session present: {}".format(callback_data.return_code, callback_data.session_present))
+#     # Callback when an interrupted connection is re-established.
+#     def aws_on_connection_resumed(connection, return_code, session_present, **kwargs):
+#         print("Connection resumed. return_code: {} session_present: {}".format(return_code, session_present))
 
-    # Callback when a connection attempt fails
-    def aws_on_connection_failure(connection, callback_data):
-        assert isinstance(callback_data, mqtt.OnConnectionFailureData)
-        print("Connection failed with error code: {}".format(callback_data.error))
+#         if return_code == mqtt.ConnectReturnCode.ACCEPTED and not session_present:
+#             print("Session did not persist. Resubscribing to existing topics...")
+#             resubscribe_future, _ = connection.resubscribe_existing_topics()
 
-    # Callback when a connection has been disconnected or shutdown successfully
-    def aws_on_connection_closed(connection, callback_data):
-        print("Connection closed")
+#             # Cannot synchronously wait for resubscribe result because we're on the connection's event-loop thread,
+#             # evaluate result with a callback instead.
+#             resubscribe_future.add_done_callback(on_resubscribe_complete)
 
-    mqtt_connection = mqtt_connection_builder.mtls_from_path(
-        endpoint=endpoint,
-        port=port,
-        cert_filepath=cert,
-        pri_key_filepath=key,
-        ca_filepath=root_ca,
-        on_connection_interrupted=aws_on_connection_interrupted,
-        on_connection_resumed=aws_on_connection_resumed,
-        client_id=client_id,
-        clean_session=False,
-        keep_alive_secs=30,
-        http_proxy_options=None,
-        on_connection_success=aws_on_connection_success,
-        on_connection_failure=aws_on_connection_failure,
-        on_connection_closed=aws_on_connection_closed,
-    )
-    connect_future = mqtt_connection.connect()
+#     def on_resubscribe_complete(resubscribe_future):
+#         resubscribe_results = resubscribe_future.result()
+#         print("Resubscribe results: {}".format(resubscribe_results))
 
-    # Future.result() waits until a result is available
-    try: 
-        connect_future.result()
-        print("mqtt client connected!")
+#         for topic, qos in resubscribe_results['topics']:
+#             if qos is None:
+#                 sys.exit("Server rejected resubscribe to topic: {}".format(topic))
 
-    except Exception as e:
 
-        print('Unable to establish mqtt connection with AWS IoT')
-        return None
+#     # Callback when the connection successfully connects
+#     def aws_on_connection_success(connection, callback_data):
+#         assert isinstance(callback_data, mqtt.OnConnectionSuccessData)
+#         print("Connection Successful with return code: {} session present: {}".format(callback_data.return_code, callback_data.session_present))
 
-    return mqtt_connection
+#     # Callback when a connection attempt fails
+#     def aws_on_connection_failure(connection, callback_data):
+#         assert isinstance(callback_data, mqtt.OnConnectionFailureData)
+#         print("Connection failed with error code: {}".format(callback_data.error))
 
-def teardown_pub(mqtt_connection: mqtt_connection_builder):
+#     # Callback when a connection has been disconnected or shutdown successfully
+#     def aws_on_connection_closed(connection, callback_data):
+#         print("Connection closed")
 
-    if mqtt_connection:
-        disconnect_future = mqtt_connection.disconnect()
+#     mqtt_connection = mqtt_connection_builder.mtls_from_path(
+#         endpoint=endpoint,
+#         port=port,
+#         cert_filepath=cert,
+#         pri_key_filepath=key,
+#         ca_filepath=root_ca,
+#         on_connection_interrupted=aws_on_connection_interrupted,
+#         on_connection_resumed=aws_on_connection_resumed,
+#         client_id=client_id,
+#         clean_session=False,
+#         keep_alive_secs=30,
+#         http_proxy_options=None,
+#         on_connection_success=aws_on_connection_success,
+#         on_connection_failure=aws_on_connection_failure,
+#         on_connection_closed=aws_on_connection_closed,
+#     )
+#     connect_future = mqtt_connection.connect()
 
-        try:
-            disconnect_future.result()
-            print('mqtt client disconnected')
-        except Exception as e:
+#     # Future.result() waits until a result is available
+#     try: 
+#         connect_future.result()
+#         print("mqtt client connected!")
 
-            print('Error closing mqtt_client connection')
+#     except Exception as e:
+
+#         print('Unable to establish mqtt connection with AWS IoT')
+#         return None
+
+#     return mqtt_connection
+
+# def teardown_pub(mqtt_connection: mqtt_connection_builder):
+
+#     if mqtt_connection:
+#         disconnect_future = mqtt_connection.disconnect()
+
+#         try:
+#             disconnect_future.result()
+#             print('mqtt client disconnected')
+#         except Exception as e:
+
+#             print('Error closing mqtt_client connection')
 
 def move_file_to_sent(filepath: str):
 
@@ -242,6 +243,29 @@ def move_file_to_sent(filepath: str):
     fname = os.path.basename(filepath)
     save_fn = os.path.join(sent_dir, fname)
     os.rename(filepath, save_fn)
+
+def paho_setup(endpoint, port, client_id, root_ca, cert, key):
+
+    def on_connect(client, userdata, flags, reason_code):
+        print(f"Connected with result code {reason_code}")
+        # Subscribing in on_connect() means that if we lose the connection and
+        # reconnect then subscriptions will be renewed.
+        client.subscribe("sdk/test/python")
+        client.is_connected = True
+
+    # The callback for when a PUBLISH message is received from the server.
+    def on_message(client, userdata, msg):
+        print(msg.topic+" "+str(msg.payload))
+
+    mqttc = paho_client.Client(client_id=client_id)
+    mqttc.tls_set(root_ca, certfile=cert, keyfile=key, tls_version=ssl.PROTOCOL_TLSv1_2, cert_reqs=ssl.CERT_REQUIRED)
+    mqttc.on_connect = on_connect
+    mqttc.on_message = on_message
+
+    mqttc.connect(endpoint, port, 60)
+    mqttc.loop_start()
+
+    return mqttc
 
 
 if __name__ == '__main__':
@@ -286,8 +310,6 @@ if __name__ == '__main__':
     # filelist = args.fileglob
     debug = args.debug
 
-
-
     while True:
 
         # get all files in: $TESSA_DATA_ROOT/<STACODE>/raw/<yyyy-mm-dd>/*.peg
@@ -296,16 +318,14 @@ if __name__ == '__main__':
                                         'raw', 
                                         '*', 
                                         '*.peg'))
-
         if filelist:
 
             filelist.sort()
-
             if args.debug:
                 print('FILES: {}'.format(filelist))
 
-
-            mqtt_client = setup_pub(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
+            mqtt_client = paho_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
+            # mqtt_client = setup_pub(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
 
             for fn in filelist:
                     
@@ -317,6 +337,6 @@ if __name__ == '__main__':
                     process_file(fn, mqtt_client, debug)
                     move_file_to_sent(fn)
 
-            teardown_pub(mqtt_client)
+            mqtt_client.loop_stop()
 
-        time.sleep(30)
+        time.sleep(15)
