@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from binascii import hexlify
-import crcmod.predefined
+import crcmod
 from datetime import datetime, timezone, timedelta
 import argparse
 import os
