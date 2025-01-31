@@ -273,7 +273,7 @@ if __name__ == '__main__':
 
     CERT = os.path.join(aws_dir, f'{thing_name}.pem')
     KEY = os.path.join(aws_dir, f'{thing_name}.private.key')
-    ROOT_CA = os.path.join(aws_dir, 'AmazonRootCA1.pem')
+    ROOT_CA = os.path.join(aws_dir, 'root-CA.crt')
 
     CLIENT_ID = thing_name
     TOPIC = 'tessa/data/raw'
