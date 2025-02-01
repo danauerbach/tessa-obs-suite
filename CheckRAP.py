@@ -36,7 +36,11 @@ def process_commands(seq_num):
 
     while True:
         # handle_messages()
-        the_input = input('> ')
+        try:
+            the_input = input('> ')
+        except EOFError:
+            continue
+        
         if the_input:
             cmd, *args = shlex.split(the_input)
         else:
