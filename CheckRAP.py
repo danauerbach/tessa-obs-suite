@@ -40,7 +40,7 @@ def process_commands(seq_num):
             the_input = input('> ')
         except EOFError:
             continue
-        
+
         if the_input:
             cmd, *args = shlex.split(the_input)
         else:
@@ -517,7 +517,7 @@ def handle_messages(quit_q, data_q: queue.Queue, ser : serial.Serial, debug=Fals
         if (len(result) == 14) and (result[:4] == b'PT02'):
             segment_len = struct.unpack_from('!H', result, 12)[0] + 4
             if debug:
-                print(f'SEGMENT SEQNUM:                   {struct.unpack_from('!H', result, 6)[0]}')
+                print(f'SEGMENT SEQNUM:                   {struct.unpack_from("!H", result, 6)[0]}')
                 print(f'SEGMENT PAYLOAD LEN (+4 for both crc): {segment_len}')
 
             payload = ser.read(segment_len)
@@ -565,8 +565,6 @@ def peg_raw_writer(quit_q, data_q, sta_code, write_bin_time_size_min=15, write_b
     # print(f'bin_start_date_formatted: {write_bin_start_dt.strftime(PEG_FILENAME_FORMAT)}')
     # print(f'PEG Filename: {cur_pegfn}')
     stdout.flush()
-
-    sta_code = 'XTES1'
 
     write_bin_start_dt = round_to_next_time_bin(datetime.now(timezone.utc), BIN_LEGNTH_MIN)
 
