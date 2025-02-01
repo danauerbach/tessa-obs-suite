@@ -57,12 +57,16 @@ def send_packet(rappkt, sta, mqtt_client, topic, qos, debug=False):
     jmsg64 = json.dumps(jpkt)
     
     #pub_future = mqtt_client.publish(topic=topic, payload=jmsg64, qos=qos)
+    mqtt_res = mqtt_client.publish(topic=topic, payload=jmsg64, qos=qos)
+    if mqtt_res.is_published():
+        print(f'publishing msg {mqtt_res.mid}...') 
+
 
     ### TODO: try/except
     #res = pub_future[0].result()
 
 
-def process_file(filename, mqtt_client, debug=False):
+def process_file(filename, mqtt_client, topic, debug=False):
 
     if debug:
         print('Processing file: ' + filename)
@@ -132,7 +136,7 @@ def process_file(filename, mqtt_client, debug=False):
                 #     handler["method"](rappkt, handler['userdata'], debug)
 
                 print_packet_info(rappkt, debug)
-                send_packet(rappkt, sta_code, mqtt_client, TOPIC, 2, debug)
+                send_packet(rappkt, sta_code, mqtt_client, topic, 2, debug)
 
             time.sleep(0.1)
 
@@ -250,23 +254,28 @@ def paho_setup(endpoint, port, client_id, root_ca, cert, key):
     print(f'paho client setup: {endpoint}, {port}, {client_id}, {root_ca}, {cert}, {key}')
 
     def on_connect(client, userdata, flags, reason_code):
-        print(f"Connected with result code {reason_code}")
+        print(f"Connected client {client} with result code {reason_code}")
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
-        client.subscribe("sdk/test/python")
-        client.is_connected = True
 
-    # The callback for when a PUBLISH message is received from the server.
+    def on_publish(client, userdata, mid):
+        print(f'msg {mid} published succesfully.')
+
+    def on_disconnect(client, userdata, rc):
+        print(f'client DISCONNECTED: {client} with rc: {rc}')
+
     def on_message(client, userdata, msg):
         print(msg.topic+" "+str(msg.payload))
 
     mqttc = mqtt.Client(client_id=client_id)
     mqttc.tls_set(root_ca, certfile=cert, keyfile=key, tls_version=ssl.PROTOCOL_TLSv1_2, cert_reqs=ssl.CERT_REQUIRED)
     mqttc.on_connect = on_connect
+    mqttc.on_disconnect = on_disconnect
     mqttc.on_message = on_message
+    mqttc.on_publish = on_publish
 
-    mqttc.connect(endpoint, port, 60)
-    mqttc.loop_start()
+    mqttc.connect(endpoint, port)
+    # mqttc.loop_start()
 
     return mqttc
 
@@ -312,7 +321,7 @@ if __name__ == '__main__':
 
     CERT = os.path.join(aws_dir, f'{thing_name}.cert.pem')
     KEY = os.path.join(aws_dir, f'{thing_name}.private.key')
-    ROOT_CA = os.path.join(aws_dir, 'root-CA.crt')
+    ROOT_CA = os.path.join(aws_dir, 'AmazonRootCA1.pem')
 
     CLIENT_ID = thing_name
     TOPIC = 'tessa/data/raw'
@@ -324,6 +333,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # filelist = args.fileglob
     debug = args.debug
+
 
     while True:
 
@@ -340,6 +350,7 @@ if __name__ == '__main__':
                 print('FILES: {}'.format(filelist))
 
             mqtt_client = paho_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
+            mqtt_client.loop_start()
             # mqtt_client = setup_pub(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
 
             for fn in filelist:
@@ -349,9 +360,10 @@ if __name__ == '__main__':
                             print('FILE NOT FOUND: {fn}. Skipping...'.format(fn=fn))
                         continue
                     fn = Path(fn).absolute()
-                    process_file(fn, mqtt_client, debug)
+                    process_file(fn, mqtt_client, TOPIC, debug)
                     move_file_to_sent(fn)
 
             mqtt_client.loop_stop()
+            mqtt_client.disconnect()
 
         time.sleep(15)
