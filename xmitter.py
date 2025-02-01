@@ -56,20 +56,15 @@ def send_packet(rappkt, sta, mqtt_client, topic, qos, debug=False):
     # jpkt.update(metadata)
     jmsg64 = json.dumps(jpkt)
     
-    #pub_future = mqtt_client.publish(topic=topic, payload=jmsg64, qos=qos)
     mqtt_res = mqtt_client.publish(topic=topic, payload=jmsg64, qos=qos)
-    if mqtt_res.is_published():
-        print(f'publishing msg {mqtt_res.mid}...') 
-
-
-    ### TODO: try/except
-    #res = pub_future[0].result()
+    print(f'waiting to publish msg: {mqtt_res.mid}...')
+    mqtt_res.wait_for_publish()
 
 
 def process_file(filename, mqtt_client, topic, debug=False):
 
     if debug:
-        print('Processing file: ' + filename)
+        print('Processing file: ' + str(filename))
 
     # mqtt_client: mqtt.Connection = setup_pub()
     if not mqtt_client:
@@ -136,7 +131,7 @@ def process_file(filename, mqtt_client, topic, debug=False):
                 #     handler["method"](rappkt, handler['userdata'], debug)
 
                 print_packet_info(rappkt, debug)
-                send_packet(rappkt, sta_code, mqtt_client, topic, 2, debug)
+                send_packet(rappkt, sta_code, mqtt_client, topic, 1, debug)
 
             time.sleep(0.1)
 
@@ -274,8 +269,8 @@ def paho_setup(endpoint, port, client_id, root_ca, cert, key):
     mqttc.on_message = on_message
     mqttc.on_publish = on_publish
 
-    mqttc.connect(endpoint, port)
-    # mqttc.loop_start()
+    mqttc.connect(endpoint, port, 60)
+    mqttc.loop_start()
 
     return mqttc
 
@@ -350,8 +345,6 @@ if __name__ == '__main__':
                 print('FILES: {}'.format(filelist))
 
             mqtt_client = paho_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
-            mqtt_client.loop_start()
-            # mqtt_client = setup_pub(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
 
             for fn in filelist:
                     
@@ -364,6 +357,5 @@ if __name__ == '__main__':
                     move_file_to_sent(fn)
 
             mqtt_client.loop_stop()
-            mqtt_client.disconnect()
 
         time.sleep(15)
