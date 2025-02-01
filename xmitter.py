@@ -319,8 +319,8 @@ if __name__ == '__main__':
         print('ERROR: TESSA_DATA_ROOT env var does not exist. Quitting....', file=sys.stderr)
         sys.exit(1)
 
-    CERT = os.path.join(aws_dir, f'{thing_name}.cert.pem')
-    KEY = os.path.join(aws_dir, f'{thing_name}.private.key')
+    CERT = os.path.join(aws_dir, f'{thing_name}.pem.crt')
+    KEY = os.path.join(aws_dir, f'{thing_name}.private.pem.key')
     ROOT_CA = os.path.join(aws_dir, 'AmazonRootCA1.pem')
 
     CLIENT_ID = thing_name
