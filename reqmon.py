@@ -143,7 +143,7 @@ if __name__ == '__main__':
             req_q.task_done()
 
         except queue.Empty as e:
-            print(f'reqmon:main: Ignoring empty request.')
+            # print(f'reqmon:main: Ignoring empty request.')
             continue
 
         except Exception as e:
