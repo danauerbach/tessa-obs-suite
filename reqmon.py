@@ -99,6 +99,8 @@ def interrupt_handler(signum, frame):
 
 if __name__ == '__main__':
 
+    signal.signal(signal.SIGINT, interrupt_handler)
+
     aws_dir = os.getenv('TESSA_AWS_DIR')
     if not aws_dir:
         print('ERROR: TESSA_AWS_DIR env var does not exist. Quitting...', file=sys.stderr)
@@ -137,7 +139,7 @@ if __name__ == '__main__':
     while not quit_evt.is_set():
 
         try:
-            req_dict = req_q.get(block=True, timeout=0.1)
+            req_dict = req_q.get(block=True, timeout=1)
             req_q.task_done()
 
         except queue.Empty as e:
