@@ -34,21 +34,57 @@ import paho.mqtt.client as mqtt
 
 def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, req_q):
 
-    def is_valid_request(msg):
+    def validate_request(msg):
 
-        return msg.get('rid') and \
-            msg.get('sta') and \
-            msg.get('beg') and \
-            msg.get('end') and \
-            (msg.get('chnbm') <= 15) and (msg.get('chnbm') > 0) # chan bitmap int, 4 bits
+        errmsg = ''
+        if not msg.get('rid'):
+            errmsg = 'MISSING FIELD: "rid" required in request'
+
+        if not msg.get('sta'):    
+            errmsg = 'MISSING FIELD: "sta" required in request'
+            
+        if not msg.get('beg'):    
+            errmsg = 'MISSING FIELD: "beg" required in request'
+
+        if not msg.get('end'):    
+            errmsg = 'MISSING FIELD: "end" required in request'
+
+        if not msg.get('chnbm'):    
+            errmsg = 'MISSING FIELD: "chnbm" required in request'
+
+        if errmsg:
+            return 'ERR', errmsg
+
+        try:
+            begdt = datetime.datetime.fromisoformat(msg.get('beg')).timestamp()
+        except:
+            return 'ERR', 'ERROR parsing "beg" iso8601 date'
+
+        try:
+            enddt = datetime.datetime.fromisoformat(msg.get('end')).timestamp()
+        except:
+            return 'ERR', 'ERROR parsing "beg" iso8601 date'
+
+        if begdt > enddt:
+            return 'ERR', 'BEG date later than END date'
+
+        if msg.get('chnbm') not in range(1,16):
+            return 'ERR', 'CHNBM invalid. must be 1-15'
+
+        return 'OK', ''
 
     def on_message(client, userdata, message):
 
         msg_str = message.payload.decode('utf-8')
         print(f'reqmon:on_message: {msg_str}')
         msg_dict = json.loads(msg_str)
-        if is_valid_request(msg_dict):
-            req_q.put(msg_dict)
+        
+        msgres, errmsg = validate_request(msg_dict)
+        msg_dict['status'] = msgres
+        msg_dict['errmsg'] = errmsg
+        msg_dict['rcvd_ts'] = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+
+        req_q.put(msg_dict)
 
     def on_connect(client, userdata, flags, rc):
         if rc==0:
@@ -141,6 +177,7 @@ if __name__ == '__main__':
         try:
             req_dict = req_q.get(block=True, timeout=1)
             req_q.task_done()
+            reqmon_client.publish(ACK_TOPIC, json.dumps(req_dict).encode("utf-8"), qos=1)
 
         except queue.Empty as e:
             # print(f'reqmon:main: Ignoring empty request.')
@@ -150,28 +187,10 @@ if __name__ == '__main__':
             print(f'reqmon:main: ERROR receiving data msg: {e}')
             continue
 
-        # construct ACK response
-        cmd = {
-            'rid': req_dict['rid'],
-            'rcvd_ts': datetime.datetime.now(tz=datetime.timezone.utc).timestamp(),
-            'status': 'OK'
-        }
-        reqmon_client.publish(ACK_TOPIC, json.dumps(cmd).encode("utf-8"), qos=1)
-
         time.sleep(1)
 
     quit_evt.wait()
 
     # gives threads a chance to exit cleanly    
     reqmon_client.loop_stop()
-
-    # start threads for each client with reference to req_q.
-    # reqmon_client thread will:
-    #   listen for requets from AWS IoT and
-    #   vaidate request
-    # if valid, send to req ack client thread using req_q Queue
-
-    # reqack_client thread will
-    #   Listen got requests over internal queue
-    #   Serialize request to disk  
-    #   Send ACk message to 'tessa/reqack' topic at AWS IoT with RequestID of incoming request.
+    
