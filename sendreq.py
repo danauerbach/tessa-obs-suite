@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
-import base64
 import datetime
-import glob
 import os
 from pathlib import Path
 import queue
 import signal
 import ssl
-import struct
 import sys
 import threading
 import time
@@ -23,14 +20,11 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, ack_topic, 
     def on_message(client, userdata, message):
 
         msg_str = message.payload.decode('utf-8')
-        # print(f'{client_id}:on_message: {msg_str}')
         msg_dict = json.loads(msg_str)
         req_q.put(msg_dict)
 
     def on_connect(client, userdata, flags, rc):
-        if rc==0:
-            print(f"{client_id}:on_connect: connected OK: {client}")
-        else:
+        if rc != 0:
             print(f"{client_id}:on_connect: Bad connection for {client} Returned code: ", rc)
             client.loop_stop()
 
@@ -103,7 +97,8 @@ if __name__ == '__main__':
         'sta': sta,
         'beg': begep,
         'end': endep,
-        'chnbm': chnbm
+        'chnbm': chnbm,
+        'reqts': datetime.datetime.now(tz=datetime.timezone.utc).isoformat(timespec='seconds')
     }
 
     msg_str = json.dumps(msg)
