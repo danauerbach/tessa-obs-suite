@@ -38,34 +38,23 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
 
         errmsg = ''
         if not msg.get('rid'):
-            errmsg = 'MISSING FIELD: "rid" required in request'
+            return 'ERR', 'MISSING FIELD: "rid" required in request'
 
         if not msg.get('sta'):    
-            errmsg = 'MISSING FIELD: "sta" required in request'
+            return 'ERR', 'MISSING FIELD: "sta" required in request'
             
         if not msg.get('beg'):    
-            errmsg = 'MISSING FIELD: "beg" required in request'
+            return 'ERR', 'MISSING FIELD: "beg" required in request'
 
         if not msg.get('end'):    
-            errmsg = 'MISSING FIELD: "end" required in request'
+            return 'ERR', 'MISSING FIELD: "end" required in request'
 
         if not msg.get('chnbm'):    
-            errmsg = 'MISSING FIELD: "chnbm" required in request'
+            return 'ERR', 'MISSING FIELD: "chnbm" required in request'
 
-        if errmsg:
-            return 'ERR', errmsg
-
-        try:
-            begdt = datetime.datetime.fromisoformat(msg.get('beg')).timestamp()
-        except:
-            return 'ERR', f"ERROR parsing BEG iso8601 date {msg.get('beg')}"
-
-        try:
-            enddt = datetime.datetime.fromisoformat(msg.get('end')).timestamp()
-        except:
-            return 'ERR', f"ERROR parsing END iso8601 date {msg.get('end')}"
-
-        if begdt > enddt:
+        begts = msg.get('beg')
+        endts = msg.get('end')
+        if begts > endts:
             return 'ERR', 'BEG date later than END date'
 
         if msg.get('chnbm') not in range(1,16):
