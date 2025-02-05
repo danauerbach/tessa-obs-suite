@@ -98,7 +98,7 @@ if __name__ == '__main__':
         'beg': begep,
         'end': endep,
         'chnbm': chnbm,
-        'reqts': datetime.datetime.now(tz=datetime.timezone.utc).isoformat(timespec='seconds')
+        'reqts': datetime.datetime.now().isoformat(timespec='seconds').replace(':', '')
     }
 
     msg_str = json.dumps(msg)
