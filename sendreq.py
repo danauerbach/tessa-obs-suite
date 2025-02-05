@@ -86,9 +86,9 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, interrupt_handler)
 
     parser = argparse.ArgumentParser(description='construct and send data request to topic "tessa/request" and listenf or ACK on topic "tessa/reqack"')
-    parser.add_argument("sta", action='store', required=True, help='station code to request data from')
-    parser.add_argument("beg", action='store', required=True, help='Start time (iso8660) of requested data segment')
-    parser.add_argument("end", action='store', required=True, help='End time (iso8660) of requested data segment')
+    parser.add_argument("sta", action='store', help='station code to request data from')
+    parser.add_argument("beg", action='store', help='Start time (iso8660) of requested data segment')
+    parser.add_argument("end", action='store', help='End time (iso8660) of requested data segment')
 
     args = parser.parse_args()
 
