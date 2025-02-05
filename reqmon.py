@@ -77,9 +77,9 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
 
     def on_connect(client, userdata, flags, rc):
         if rc==0:
-            print("reqmon:on_connect: connected OK: {client}")
+            print(f"reqmon:on_connect: connected OK: {client}")
         else:
-            print("reqmon:on_connect: Bad connection for {client} Returned code: ", rc)
+            print(f"reqmon:on_connect: Bad connection for {client} Returned code: ", rc)
             client.loop_stop()
 
     def on_disconnect(client, userdata, rc):
@@ -89,7 +89,7 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
         print("Subscribed: "+str(mid)+" "+str(granted_qos))
 
     def on_publish(client, userdata, mid):
-        print("reqmon:on_connect: {client} mid= "  ,mid)
+        print(f"reqmon:on_connect: {client} mid= "  ,mid)
 
 
     reqmon_client = mqtt.Client(client_id=client_id)
