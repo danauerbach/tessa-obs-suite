@@ -58,12 +58,12 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
         try:
             begdt = datetime.datetime.fromisoformat(msg.get('beg')).timestamp()
         except:
-            return 'ERR', 'ERROR parsing "beg" iso8601 date'
+            return 'ERR', f"ERROR parsing BEG iso8601 date {msg.get('beg')}"
 
         try:
             enddt = datetime.datetime.fromisoformat(msg.get('end')).timestamp()
         except:
-            return 'ERR', 'ERROR parsing "beg" iso8601 date'
+            return 'ERR', f"ERROR parsing END iso8601 date {msg.get('end')}"
 
         if begdt > enddt:
             return 'ERR', 'BEG date later than END date'
