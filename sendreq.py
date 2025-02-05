@@ -94,7 +94,7 @@ if __name__ == '__main__':
     if not end.endswith('Z'):
         end += 'Z'
     endep = datetime.datetime.fromisoformat(end).timestamp()
-    chnbm = args.chnbm
+    chnbm = int(args.chnbm)
 
     rid = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
 
