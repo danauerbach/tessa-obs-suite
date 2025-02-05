@@ -23,15 +23,15 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, ack_topic, 
     def on_message(client, userdata, message):
 
         msg_str = message.payload.decode('utf-8')
-        print(f'{client_id}:on_message: {msg_str}')
+        # print(f'{client_id}:on_message: {msg_str}')
         msg_dict = json.loads(msg_str)
         req_q.put(msg_dict)
 
     def on_connect(client, userdata, flags, rc):
         if rc==0:
-            print("{client_id}:on_connect: connected OK: {client}")
+            print(f"{client_id}:on_connect: connected OK: {client}")
         else:
-            print("{client_id}:on_connect: Bad connection for {client} Returned code: ", rc)
+            print(f"{client_id}:on_connect: Bad connection for {client} Returned code: ", rc)
             client.loop_stop()
 
     def on_disconnect(client, userdata, rc):
@@ -41,7 +41,7 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, ack_topic, 
         print("Subscribed: "+str(mid)+" "+str(granted_qos))
 
     def on_publish(client, userdata, mid):
-        print("{client_id}:on_connect: {client} mid= "  ,mid)
+        print(f"{client_id}:on_connect: {client} mid= "  ,mid)
 
 
     req_client = mqtt.Client(client_id=client_id)
@@ -147,6 +147,10 @@ if __name__ == '__main__':
             req_dict = req_q.get(block=True, timeout=1)
             req_q.task_done()
             if rid == req_dict.get('rid'):
+                if req_dict.get('status').upper() != 'OK':
+                    print(f"ERROR Parsing Request: {req_dict.get('errmsg')}")
+                else:
+                    print('Request successfully received')
                 quit_evt.set()
 
         except queue.Empty as e:
@@ -156,12 +160,7 @@ if __name__ == '__main__':
         except Exception as e:
             print(f'reqmon:main: ERROR receiving data msg: {e}')
             continue
-
-        #### CHECK FOR status='OK' ACK msg ########
-        # TODO TODO
-        
-
-        
+      
         time.sleep(1)
 
     # gives threads a chance to exit cleanly    
