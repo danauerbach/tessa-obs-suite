@@ -114,6 +114,20 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
     return reqmon_client
 
 
+def write_request(target_dir, reqdict):
+
+    reqts = reqdict['reqts']
+    rid = reqdict['rid']
+    sta = reqdict['sta']
+
+    req_fn = f"{sta.upper()}_{reqts}_{rid}.req"
+    req_fn = os.path.join(target_dir, sta.upper(), 'requests', req_fn)
+
+    with open(req_fn, 'wt') as reqfl:
+        reqrec = f"{sta.upper()}, {reqdict['chnbm']}, {reqdict['beg']}, {reqdict['end']}, {reqts}\n"
+        reqfl.write(reqrec)
+
+
 def interrupt_handler(signum, frame):
 
     quit_evt.set()
@@ -141,6 +155,7 @@ if __name__ == '__main__':
         print('ERROR: TESSA_DATA_ROOT env var does not exist. Quitting....', file=sys.stderr)
         sys.exit(1)
 
+
     ENDPOINT = 'iot.tessa-obs.net'
     PORT = 8883
     CERT = os.path.join(aws_dir, f'{thing_name}.pem.crt')
@@ -167,6 +182,8 @@ if __name__ == '__main__':
             req_dict = req_q.get(block=True, timeout=1)
             req_q.task_done()
             reqmon_client.publish(ACK_TOPIC, json.dumps(req_dict).encode("utf-8"), qos=1)
+            if req_dict['status'].upper() == 'OK':
+                write_request(DATA_ROOT_DIR, req_dict)
 
         except queue.Empty as e:
             # print(f'reqmon:main: Ignoring empty request.')
