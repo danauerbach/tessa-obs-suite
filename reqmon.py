@@ -133,7 +133,7 @@ if __name__ == '__main__':
     # to main thread that writes to disk and sends ack
     req_q = queue.Queue()
 
-    reqmon_client = paho_client_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY, REQ_TOPIC, quit_evt)
+    reqmon_client = paho_client_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY, REQ_TOPIC, req_q)
 
 
     while not quit_evt.is_set():
