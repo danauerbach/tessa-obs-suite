@@ -20,14 +20,6 @@ import paho.mqtt.client as mqtt
 
 def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, ack_topic, req_q):
 
-    def is_valid_request(msg):
-
-        return msg.get('rid') and \
-            msg.get('sta') and \
-            msg.get('begep') and \
-            msg.get('endep') and \
-            (msg.get('chnbm') <= 15) and (msg.get('chnbm') > 0) # chan bitmap int, 4 bits
-
     def on_message(client, userdata, message):
 
         msg_str = message.payload.decode('utf-8')
@@ -89,6 +81,7 @@ if __name__ == '__main__':
     parser.add_argument("sta", action='store', help='station code to request data from')
     parser.add_argument("beg", action='store', help='Start time (iso8660) of requested data segment')
     parser.add_argument("end", action='store', help='End time (iso8660) of requested data segment')
+    parser.add_argument("chnbm", action='store', help='Channel bitmap value (4 low order bits: 1-15)')
 
     args = parser.parse_args()
 
@@ -101,6 +94,7 @@ if __name__ == '__main__':
     if not end.endswith('Z'):
         end += 'Z'
     endep = datetime.datetime.fromisoformat(end).timestamp()
+    chnbm = args.chnbm
 
     rid = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
 
@@ -108,7 +102,8 @@ if __name__ == '__main__':
         'rid': rid,
         'sta': sta,
         'beg': begep,
-        'end': endep
+        'end': endep,
+        'chnbm': chnbm
     }
 
     msg_str = json.dumps(msg)

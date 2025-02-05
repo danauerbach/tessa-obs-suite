@@ -38,8 +38,8 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
 
         return msg.get('rid') and \
             msg.get('sta') and \
-            msg.get('begep') and \
-            msg.get('endep') and \
+            msg.get('beg') and \
+            msg.get('end') and \
             (msg.get('chnbm') <= 15) and (msg.get('chnbm') > 0) # chan bitmap int, 4 bits
 
     def on_message(client, userdata, message):
