@@ -146,6 +146,8 @@ if __name__ == '__main__':
         try:
             req_dict = req_q.get(block=True, timeout=1)
             req_q.task_done()
+            if rid == req_dict.get('rid'):
+                quit_evt.set()
 
         except queue.Empty as e:
             print(f'No ACK received yet....')
