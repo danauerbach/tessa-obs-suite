@@ -120,7 +120,7 @@ def write_request(target_dir, reqdict):
     rid = reqdict['rid']
     sta = reqdict['sta']
 
-    req_fn = f"{sta.upper()}_{reqts}_{rid}.req"
+    req_fn = f"{sta.upper()}_{reqdict['chnbm']}_{rid}.req"
     req_path = os.path.join(target_dir, sta.upper(), 'requests')
     if not os.path.exists(req_path):
         os.makedirs(req_path, exist_ok=True)
