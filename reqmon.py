@@ -125,6 +125,8 @@ def write_request(target_dir, reqdict):
     if not os.path.exists(req_path):
         os.makedirs(req_path, exist_ok=True)
 
+    req_fn = os.path.join(req_path, req_fn)
+
     with open(req_fn, 'wt') as reqfl:
         reqrec = f"{sta.upper()}, {reqdict['chnbm']}, {reqdict['beg']}, {reqdict['end']}, {reqts}\n"
         reqfl.write(reqrec)
