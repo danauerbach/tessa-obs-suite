@@ -76,9 +76,7 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
         req_q.put(msg_dict)
 
     def on_connect(client, userdata, flags, rc):
-        if rc==0:
-            print(f"reqmon:on_connect: connected OK: {client}")
-        else:
+        if rc != 0:
             print(f"reqmon:on_connect: Bad connection for {client} Returned code: ", rc)
             client.loop_stop()
 
