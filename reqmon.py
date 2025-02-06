@@ -7,6 +7,7 @@ import glob
 import os
 from pathlib import Path
 import queue
+import shutil
 import signal
 import ssl
 import struct
@@ -128,6 +129,8 @@ def write_request(target_dir, reqdict):
     with open(req_fn, 'wt') as reqfl:
         reqrec = f"{rid}, {sta.upper()}, {reqdict['chnbm']}, {reqdict['beg']}, {reqdict['end']}\n"
         reqfl.write(reqrec)
+
+    shutil.chown(req_fn, user='tessa', group='tessa')
 
 
 def interrupt_handler(signum, frame):
