@@ -128,7 +128,7 @@ def write_request(target_dir, reqdict):
     req_fn = os.path.join(req_path, req_fn)
 
     with open(req_fn, 'wt') as reqfl:
-        reqrec = f"{sta.upper()}, {reqdict['chnbm']}, {reqdict['beg']}, {reqdict['end']}, {reqts}\n"
+        reqrec = f"{rid}, {sta.upper()}, {reqdict['chnbm']}, {reqdict['beg']}, {reqdict['end']}\n"
         reqfl.write(reqrec)
 
 
