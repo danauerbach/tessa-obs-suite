@@ -66,7 +66,7 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
     def on_message(client, userdata, message):
 
         msg_str = message.payload.decode('utf-8')
-        print(f'reqmon:on_message: {msg_str}')
+        print('reqmon:on_message:', msg_str)
         msg_dict = json.loads(msg_str)
         
         msgres, errmsg = validate_request(msg_dict)
@@ -78,7 +78,7 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
 
     def on_connect(client, userdata, flags, rc):
         if rc != 0:
-            print(f"reqmon:on_connect: Bad connection for {client} Returned code: ", rc)
+            print("reqmon:on_connect: Bad connection for {} Returned code: {}".format(client, rc))
             client.loop_stop()
 
     def on_disconnect(client, userdata, rc):
@@ -88,7 +88,7 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
         print("Subscribed: "+str(mid)+" "+str(granted_qos))
 
     def on_publish(client, userdata, mid):
-        print(f"reqmon:on_connect: {client} mid= "  ,mid)
+        print("reqmon:on_connect: {} mid= ".format(client,mid))
 
 
     reqmon_client = mqtt.Client(client_id=client_id)
@@ -102,8 +102,8 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
 
     res, _ = reqmon_client.subscribe(req_topic, qos=1)
     if res != mqtt.MQTT_ERR_SUCCESS:
-        print(f'{client_id}: ERROR subscribing to {req_topic}')
-        print(f'{client_id}: shutting down')
+        print('Client {}: ERROR subscribing to {}'.format(client_id, req_topic))
+        print('shutting down')
         # quit_evt.set()
         time.sleep(.25)
         return None
@@ -119,7 +119,7 @@ def write_request(target_dir, reqdict):
     rid = reqdict['rid']
     sta = reqdict['sta']
 
-    req_fn = f"{sta.upper()}_{reqdict['chnbm']}_{rid}.req"
+    req_fn = "{}_{}_{}.req".format(sta.upper(), reqdict['chnbm'], rid)
     req_path = os.path.join(target_dir, sta.upper(), 'requests')
     if not os.path.exists(req_path):
         os.makedirs(req_path, exist_ok=True)
@@ -127,7 +127,8 @@ def write_request(target_dir, reqdict):
     req_fn = os.path.join(req_path, req_fn)
 
     with open(req_fn, 'wt') as reqfl:
-        reqrec = f"{rid}, {sta.upper()}, {reqdict['chnbm']}, {reqdict['beg']}, {reqdict['end']}\n"
+        # reqrec = f"{rid}, {sta.upper()}, {reqdict['chnbm']}, {reqdict['beg']}, {reqdict['end']}\n"
+        reqrec = "{}, {}, {}, {}, {}\n".format(rid, sta.upper(), reqdict['chnbm'], reqdict['beg'], reqdict['end'])
         reqfl.write(reqrec)
 
     shutil.chown(req_fn, user='tessa', group='tessa')
@@ -163,9 +164,10 @@ if __name__ == '__main__':
 
     ENDPOINT = 'iot.tessa-obs.net'
     PORT = 8883
-    CERT = os.path.join(aws_dir, f'{thing_name}.pem.crt')
-    KEY = os.path.join(aws_dir, f'{thing_name}.private.pem.key')
+    CERT = os.path.join(aws_dir, thing_name+'.pem.crt')
+    KEY = os.path.join(aws_dir, thing_name+'.private.pem.key')
     ROOT_CA = os.path.join(aws_dir, 'AmazonRootCA1.pem')
+
 
     CLIENT_ID = 'tessa-wg-reqmon'
     REQ_TOPIC = 'tessa/request'
@@ -195,7 +197,7 @@ if __name__ == '__main__':
             continue
 
         except Exception as e:
-            print(f'reqmon:main: ERROR receiving data msg: {e}')
+            print('reqmon:main: ERROR receiving data msg:', e)
             continue
 
         time.sleep(1)

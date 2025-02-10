@@ -57,7 +57,7 @@ def send_packet(rappkt, sta, mqtt_client, topic, qos, debug=False):
     jmsg64 = json.dumps(jpkt)
     
     mqtt_res = mqtt_client.publish(topic=topic, payload=jmsg64, qos=qos)
-    print(f'waiting to publish msg: {mqtt_res.mid}...')
+    print('waiting to publish msg: {}'.format(mqtt_res.mid))
     mqtt_res.wait_for_publish()
 
 
@@ -246,18 +246,18 @@ def move_file_to_sent(filepath: str):
 
 def paho_setup(endpoint, port, client_id, root_ca, cert, key):
 
-    print(f'paho client setup: {endpoint}, {port}, {client_id}, {root_ca}, {cert}, {key}')
+    print('paho client setup: {} {} {} {} {} {}'.format(endpoint, port, client_id, root_ca, cert, key))
 
     def on_connect(client, userdata, flags, reason_code):
-        print(f"Connected client {client} with result code {reason_code}")
+        print("Connected client {} with result code {}".format(client, reason_code))
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
 
     def on_publish(client, userdata, mid):
-        print(f'msg {mid} published succesfully.')
+        print('msg {} published succesfully.'.format(mid))
 
     def on_disconnect(client, userdata, rc):
-        print(f'client DISCONNECTED: {client} with rc: {rc}')
+        print('client DISCONNECTED: {} with rc: {}'.format(client, rc))
 
     def on_message(client, userdata, msg):
         print(msg.topic+" "+str(msg.payload))
@@ -275,8 +275,6 @@ def paho_setup(endpoint, port, client_id, root_ca, cert, key):
     return mqttc
 
 def interrupt_handler(signum, frame):
-
-    # print(f'Handling signal {signum} ({signal.Signals(signum).name}).')
 
     mqtt_client.loop_stop()
     
@@ -314,8 +312,8 @@ if __name__ == '__main__':
         print('ERROR: TESSA_DATA_ROOT env var does not exist. Quitting....', file=sys.stderr)
         sys.exit(1)
 
-    CERT = os.path.join(aws_dir, f'{thing_name}.pem.crt')
-    KEY = os.path.join(aws_dir, f'{thing_name}.private.pem.key')
+    CERT = os.path.join(aws_dir, thing_name+'.pem.crt')
+    KEY = os.path.join(aws_dir, thing_name+'.private.pem.key')
     ROOT_CA = os.path.join(aws_dir, 'AmazonRootCA1.pem')
 
     CLIENT_ID = thing_name
