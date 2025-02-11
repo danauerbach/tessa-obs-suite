@@ -158,8 +158,8 @@ class RAPPacket:
 
         if self.app_packet_type == APP_RESPONSE_TYPE_ACK:
             details += "               ack packet: "+ self._packet_type_name() + "\n"
-            details += "             request type: "+ struct.unpack('!H', self.app_payload[0:2])[0] + "\n"
-            details += "              status_code: "+ struct.unpack('!H', self.app_payload[2:4])[0] + "\n"
+            details += "             request type: "+ str(struct.unpack('!H', self.app_payload[0:2])[0]) + "\n"
+            details += "              status_code: "+ str(struct.unpack('!H', self.app_payload[2:4])[0]) + "\n"
 
         elif self.app_packet_type == APP_RESPONSE_TYPE_STREAMED_SERIES:
             details += "Stream Time Series packet: " + self._packet_type_name() + "\n\n"
@@ -168,13 +168,13 @@ class RAPPacket:
             details += "                timestamp: " + str(self.ts_timestamp_ns) + "\n"
             details += "                           " + dt.isoformat() + "\n"
             self.chan_ndx = struct.unpack_from('!B', self.app_payload, 8)[0]
-            details += "               chan index: " + struct.unpack_from('!B', self.app_payload, 8)[0]  + "\n"
-            details += "               media type: " + struct.unpack_from('!H', self.app_payload, 10)[0] + "\n"
-            details += "                # samples: " + struct.unpack_from('!H', self.app_payload, 12)[0] + "\n"
-            details += "                sr factor: " + struct.unpack_from('!b', self.app_payload, 14)[0] + "\n"
-            details += "            sr multiplier: " + struct.unpack_from('!b', self.app_payload, 15)[0] + "\n"
-            details += "           sample bit res: " + struct.unpack_from('!B', self.app_payload, 16)[0] + "\n"
-            details += "      data frames per pkt: " + struct.unpack_from('!B', self.app_payload, 17)[0] + "\n"
+            details += "               chan index: " + str(struct.unpack_from('!B', self.app_payload, 8)[0])  + "\n"
+            details += "               media type: " + str(struct.unpack_from('!H', self.app_payload, 10)[0]) + "\n"
+            details += "                # samples: " + str(struct.unpack_from('!H', self.app_payload, 12)[0]) + "\n"
+            details += "                sr factor: " + str(struct.unpack_from('!b', self.app_payload, 14)[0]) + "\n"
+            details += "            sr multiplier: " + str(struct.unpack_from('!b', self.app_payload, 15)[0]) + "\n"
+            details += "           sample bit res: " + str(struct.unpack_from('!B', self.app_payload, 16)[0]) + "\n"
+            details += "      data frames per pkt: " + str(struct.unpack_from('!B', self.app_payload, 17)[0]) + "\n"
 
             data_frame_cnt = struct.unpack_from('!B', self.app_payload, 17)[0]
             self.store_timeseries_info(data_frame_cnt)
@@ -184,34 +184,34 @@ class RAPPacket:
             # print(ts, type(ts))
 
             details += " Latest SOH series packet: " + self._packet_type_name() + "\n"
-            details += "                timestamp: " + struct.unpack_from('!I', self.app_payload, 0)[0] + "\n"
-            details += "            status-uptime: " + struct.unpack_from('!I', self.app_payload, 4)[0] + "\n"
-            details += "          status-battvolt: " + struct.unpack_from('!f', self.app_payload, 8)[0] + "\n"
-            details += "          status-maincurr: " + struct.unpack_from('!f', self.app_payload, 12)[0] + "\n"
-            details += "          status-senscurr: " + struct.unpack_from('!f', self.app_payload, 16)[0] + "\n"
-            details += "           status-systemp: " + struct.unpack_from('!f', self.app_payload, 20)[0] + "\n"
-            details += "          status-syspress: " + struct.unpack_from('!f', self.app_payload, 24)[0] + "\n"
-            details += "              status-soh1: " + struct.unpack_from('!f', self.app_payload, 28)[0] + "\n"
-            details += "              status-soh2: " + struct.unpack_from('!f', self.app_payload, 32)[0] + "\n"
-            details += "              status-soh3: " + struct.unpack_from('!f', self.app_payload, 36)[0] + "\n"
-            details += "              status-soh4: " + struct.unpack_from('!f', self.app_payload, 40)[0] + "\n"
+            details += "                timestamp: " + str(struct.unpack_from('!I', self.app_payload, 0)[0]) + "\n"
+            details += "            status-uptime: " + str(struct.unpack_from('!I', self.app_payload, 4)[0]) + "\n"
+            details += "          status-battvolt: " + str(struct.unpack_from('!f', self.app_payload, 8)[0]) + "\n"
+            details += "          status-maincurr: " + str(struct.unpack_from('!f', self.app_payload, 12)[0]) + "\n"
+            details += "          status-senscurr: " + str(struct.unpack_from('!f', self.app_payload, 16)[0]) + "\n"
+            details += "           status-systemp: " + str(struct.unpack_from('!f', self.app_payload, 20)[0]) + "\n"
+            details += "          status-syspress: " + str(struct.unpack_from('!f', self.app_payload, 24)[0]) + "\n"
+            details += "              status-soh1: " + str(struct.unpack_from('!f', self.app_payload, 28)[0]) + "\n"
+            details += "              status-soh2: " + str(struct.unpack_from('!f', self.app_payload, 32)[0]) + "\n"
+            details += "              status-soh3: " + str(struct.unpack_from('!f', self.app_payload, 36)[0]) + "\n"
+            details += "              status-soh4: " + str(struct.unpack_from('!f', self.app_payload, 40)[0]) + "\n"
 
-            details += "             gnss-tm2lock: " + struct.unpack_from('!I', self.app_payload, 60)[0] + "\n"
-            details += "                 gnss-lat: " + struct.unpack_from('!d', self.app_payload, 64)[0] + "\n"
-            details += "                 gnss-lon: " + struct.unpack_from('!d', self.app_payload, 72)[0] + "\n"
-            details += "                 gnss-alt: " + struct.unpack_from('!f', self.app_payload, 80)[0] + "\n"
-            details += "            gnss-tmuncert: " + struct.unpack_from('!I', self.app_payload, 84)[0] + "\n"
-            details += "           gnss-tmlastpps: " + struct.unpack_from('!I', self.app_payload, 88)[0] + "\n"
-            details += "             gnss-antstat: " + struct.unpack_from('!B', self.app_payload, 92)[0] + "\n"
-            details += "              gnss-extant: " + struct.unpack_from('!?', self.app_payload, 93)[0] + "\n"
-            details += "              gnss-satcnt: " + struct.unpack_from('!B', self.app_payload, 94)[0] + "\n"
+            details += "             gnss-tm2lock: " + str(struct.unpack_from('!I', self.app_payload, 60)[0]) + "\n"
+            details += "                 gnss-lat: " + str(struct.unpack_from('!d', self.app_payload, 64)[0]) + "\n"
+            details += "                 gnss-lon: " + str(struct.unpack_from('!d', self.app_payload, 72)[0]) + "\n"
+            details += "                 gnss-alt: " + str(struct.unpack_from('!f', self.app_payload, 80)[0]) + "\n"
+            details += "            gnss-tmuncert: " + str(struct.unpack_from('!I', self.app_payload, 84)[0]) + "\n"
+            details += "           gnss-tmlastpps: " + str(struct.unpack_from('!I', self.app_payload, 88)[0]) + "\n"
+            details += "             gnss-antstat: " + str(struct.unpack_from('!B', self.app_payload, 92)[0]) + "\n"
+            details += "              gnss-extant: " + str(struct.unpack_from('!?', self.app_payload, 93)[0]) + "\n"
+            details += "              gnss-satcnt: " + str(struct.unpack_from('!B', self.app_payload, 94)[0]) + "\n"
 
-            details += "               obs-tmstat: " + struct.unpack_from('!B', self.app_payload, 95)[0] + "\n"
-            details += "              obs-ssphval: " + struct.unpack_from('!I', self.app_payload, 96)[0] + "\n"
-            details += "              obs-ssphrng: " + struct.unpack_from('!I', self.app_payload, 100)[0] + "\n"
-            details += "           obs-tmlastsync: " + struct.unpack_from('!I', self.app_payload, 104)[0] + "\n"
-            details += "          obs-gnsslockdur: " + struct.unpack_from('!I', self.app_payload, 108)[0] + "\n"
-            details += "         obs-systmgnsspps: " + struct.unpack_from('!Q', self.app_payload, 112)[0] + "\n"
+            details += "               obs-tmstat: " + str(struct.unpack_from('!B', self.app_payload, 95)[0]) + "\n"
+            details += "              obs-ssphval: " + str(struct.unpack_from('!I', self.app_payload, 96)[0]) + "\n"
+            details += "              obs-ssphrng: " + str(struct.unpack_from('!I', self.app_payload, 100)[0]) + "\n"
+            details += "           obs-tmlastsync: " + str(struct.unpack_from('!I', self.app_payload, 104)[0]) + "\n"
+            details += "          obs-gnsslockdur: " + str(struct.unpack_from('!I', self.app_payload, 108)[0]) + "\n"
+            details += "         obs-systmgnsspps: " + str(struct.unpack_from('!Q', self.app_payload, 112)[0]) + "\n"
 
 
         elif self.app_packet_type == APP_RESPONSE_TYPE_STATION_INFO:
@@ -231,12 +231,12 @@ class RAPPacket:
             dt = datetime.fromtimestamp(self.ts_timestamp_ns/1000000000)
             details += "                timestamp: " + str(self.ts_timestamp_ns) + "\n"
             details += "                           " + dt.isoformat() + "\n"
-            details += "               chan index: " + struct.unpack_from('!B', self.app_payload, 8)[0]  + "\n"
-            details += "               media type: " + struct.unpack_from('!H', self.app_payload, 10)[0] + "\n"
-            details += "                # samples: " + struct.unpack_from('!H', self.app_payload, 12)[0] + "\n"
-            details += "                sr factor: " + struct.unpack_from('!b', self.app_payload, 14)[0] + "\n"
-            details += "            sr multiplier: " + struct.unpack_from('!b', self.app_payload, 15)[0] + "\n"
-            details += "           sample bit res: " + struct.unpack_from('!B', self.app_payload, 16)[0] + "\n"
+            details += "               chan index: " + str(struct.unpack_from('!B', self.app_payload, 8)[0])  + "\n"
+            details += "               media type: " + str(struct.unpack_from('!H', self.app_payload, 10)[0]) + "\n"
+            details += "                # samples: " + str(struct.unpack_from('!H', self.app_payload, 12)[0]) + "\n"
+            details += "                sr factor: " + str(struct.unpack_from('!b', self.app_payload, 14)[0]) + "\n"
+            details += "            sr multiplier: " + str(struct.unpack_from('!b', self.app_payload, 15)[0]) + "\n"
+            details += "           sample bit res: " + str(struct.unpack_from('!B', self.app_payload, 16)[0]) + "\n"
             self.chan_ndx = struct.unpack_from('!B', self.app_payload, 8)[0]
 
             data_frame_cnt = 63
@@ -248,12 +248,12 @@ class RAPPacket:
             self.net_code = struct.unpack_from('2s', self.app_payload, 2)[0].decode()
             details += "                     Station: " + self.sta_code + "\n"
             self.sta_code = struct.unpack_from('5s', self.app_payload, 4)[0].decode()
-            details += " Low Volt Shutdown Threshold: " + struct.unpack_from('!I', self.app_payload, 9)[0] + "\n"
-            details += "Low Volt Reconnect Threshold: " + struct.unpack_from('!I', self.app_payload, 13)[0] + "\n"
-            details += "          Low Volt Threshold: " + struct.unpack_from('!I', self.app_payload, 17)[0] + "\n"
-            details += "         High Volt Threshold: " + struct.unpack_from('!I', self.app_payload, 21)[0] + "\n"
-            details += "          Low Curr Threshold: " + struct.unpack_from('!I', self.app_payload, 25)[0] + "\n"
-            details += "         High Curr Threshold: " + struct.unpack_from('!I', self.app_payload, 29)[0] + "\n"
+            details += " Low Volt Shutdown Threshold: " + str(struct.unpack_from('!I', self.app_payload, 9)[0]) + "\n"
+            details += "Low Volt Reconnect Threshold: " + str(struct.unpack_from('!I', self.app_payload, 13)[0]) + "\n"
+            details += "          Low Volt Threshold: " + str(struct.unpack_from('!I', self.app_payload, 17)[0]) + "\n"
+            details += "         High Volt Threshold: " + str(struct.unpack_from('!I', self.app_payload, 21)[0]) + "\n"
+            details += "          Low Curr Threshold: " + str(struct.unpack_from('!I', self.app_payload, 25)[0]) + "\n"
+            details += "         High Curr Threshold: " + str(struct.unpack_from('!I', self.app_payload, 29)[0]) + "\n"
             
 
             details += '\n'
@@ -261,7 +261,7 @@ class RAPPacket:
             gnss_str = self._format_gnss_bits(gnss_bits)
             details += "         GNSS Constellations: " + gnss_str + "\n"
 
-            details += "Low GNSS Sat Count Threshold: " + struct.unpack_from('!B', self.app_payload, 42)[0] + "\n"
+            details += "Low GNSS Sat Count Threshold: " + str(struct.unpack_from('!B', self.app_payload, 42)[0]) + "\n"
 
             details += '\n'
             con_chan_enable_bits = int(struct.unpack_from('!B', self.app_payload, 57)[0])
@@ -271,19 +271,19 @@ class RAPPacket:
             details += '\n'
             ctl_line_level_bits = int(struct.unpack_from('!B', self.app_payload, 58)[0])
             details += " Connector A - Cntl Line Lvl: " + self._format_control_line_lvl_bits(ctl_line_level_bits) + "\n"
-            details += "Connector A - Pulse Duration: " + struct.unpack_from('!B', self.app_payload, 59)[0] + "\n"
-            details += "   Connector A - Sample Rate: " + struct.unpack_from('!H', self.app_payload, 60)[0] + "\n"
-            details += "  Connector A - Harware Gain: " + struct.unpack_from('!B', self.app_payload, 62)[0] + "\n"
+            details += "Connector A - Pulse Duration: " + str(struct.unpack_from('!B', self.app_payload, 59)[0]) + "\n"
+            details += "   Connector A - Sample Rate: " + str(struct.unpack_from('!H', self.app_payload, 60)[0]) + "\n"
+            details += "  Connector A - Harware Gain: " + str(struct.unpack_from('!B', self.app_payload, 62)[0]) + "\n"
 
             ctl_line_level_bits = int(struct.unpack_from('!B', self.app_payload, 63)[0])
             details += " Connector B - Cntl Line Lvl: " + self._format_control_line_lvl_bits(ctl_line_level_bits) + "\n"
-            details += "Connector B - Pulse Duration: " + struct.unpack_from('!B', self.app_payload, 64)[0] + "\n"
-            details += "   Connector B - Sample Rate: " + struct.unpack_from('!H', self.app_payload, 65)[0] + "\n"
-            details += "  Connector B - Harware Gain: " + struct.unpack_from('!B', self.app_payload, 67)[0] + "\n"
+            details += "Connector B - Pulse Duration: " + str(struct.unpack_from('!B', self.app_payload, 64)[0]) + "\n"
+            details += "   Connector B - Sample Rate: " + str(struct.unpack_from('!H', self.app_payload, 65)[0]) + "\n"
+            details += "  Connector B - Harware Gain: " + str(struct.unpack_from('!B', self.app_payload, 67)[0]) + "\n"
 
             details += '\n'
             details += '\n'
-            details += "          Control Line Setting: " + struct.unpack_from('!B', self.app_payload, 88)[0] + "\n"
+            details += "          Control Line Setting: " + str(struct.unpack_from('!B', self.app_payload, 88)[0]) + "\n"
             details += "       Control Line 1 Descript: " + struct.unpack_from('10s', self.app_payload, 89)[0].decode() + "\n"
             ctl_func_str = self._format_control_line_function(struct.unpack_from('!B', self.app_payload, 99)[0])
             details += "       Control Line 1 Function: " + ctl_func_str + "\n"
@@ -297,25 +297,25 @@ class RAPPacket:
             ctl_func_str = self._format_control_line_function(struct.unpack_from('!B', self.app_payload, 132)[0])
             details += "       Control Line 4 Function: " + ctl_func_str + "\n"
 
-            details += "             SOH Lines Enabled: " + struct.unpack_from('!B', self.app_payload, 133)[0] + "\n"
+            details += "             SOH Lines Enabled: " + str(struct.unpack_from('!B', self.app_payload, 133)[0]) + "\n"
 
             details += "          SOH Line 1  Descript: " + struct.unpack_from('10s', self.app_payload, 134)[0].decode() + "\n"
-            details += "          SOH Line 1 Threshold: " + struct.unpack_from('!f', self.app_payload, 144)[0] + "\n"
+            details += "          SOH Line 1 Threshold: " + str(struct.unpack_from('!f', self.app_payload, 144)[0]) + "\n"
             details += "          SOH Line 2  Descript: " + struct.unpack_from('10s', self.app_payload, 148)[0].decode() + "\n"
-            details += "          SOH Line 2 Threshold: " + struct.unpack_from('!f', self.app_payload, 158)[0] + "\n"
+            details += "          SOH Line 2 Threshold: " + str(struct.unpack_from('!f', self.app_payload, 158)[0]) + "\n"
             details += "          SOH Line 3  Descript: " + struct.unpack_from('10s', self.app_payload, 162)[0].decode() + "\n"
-            details += "          SOH Line 3 Threshold: " + struct.unpack_from('!f', self.app_payload, 172)[0] + "\n"
+            details += "          SOH Line 3 Threshold: " + str(struct.unpack_from('!f', self.app_payload, 172)[0]) + "\n"
             details += "          SOH Line 4  Descript: " + struct.unpack_from('10s', self.app_payload, 176)[0].decode() + "\n"
-            details += "          SOH Line 4 Threshold: " + struct.unpack_from('!f', self.app_payload, 186)[0] + "\n"
+            details += "          SOH Line 4 Threshold: " + str(struct.unpack_from('!f', self.app_payload, 186)[0]) + "\n"
 
             details += '\n'
             auto_mctr_flags = struct.unpack_from('!B', self.app_payload, 190)[0]
             details += "           Auto Mass Centering: " + 'Enable Low Thresh' if auto_mctr_flags == 0 else 'Enable High Thresh' "\n"
-            details += "     Auto Mass Ctr Low  Thresh: " + struct.unpack_from('!f', self.app_payload, 191)[0] + "V\n"
-            details += "     Auto Mass Ctr High Thresh: " + struct.unpack_from('!f', self.app_payload, 195)[0] + "V\n"
-            details += "Auto Mass Ctr Low Holdoff Time: " + struct.unpack_from('!B', self.app_payload, 199)[0] + "secs\n"
-            details += "     Auto Mass Ctr Max Retries: " + struct.unpack_from('!B', self.app_payload, 200)[0] + "\n"
-            details += "  Auto Mass Ctr Retry Interval: " + struct.unpack_from('!B', self.app_payload, 201)[0] + "min\n"
+            details += "     Auto Mass Ctr Low  Thresh: " + str(struct.unpack_from('!f', self.app_payload, 191)[0]) + "V\n"
+            details += "     Auto Mass Ctr High Thresh: " + str(struct.unpack_from('!f', self.app_payload, 195)[0]) + "V\n"
+            details += "Auto Mass Ctr Low Holdoff Time: " + str(struct.unpack_from('!B', self.app_payload, 199)[0]) + "secs\n"
+            details += "     Auto Mass Ctr Max Retries: " + str(struct.unpack_from('!B', self.app_payload, 200)[0]) + "\n"
+            details += "  Auto Mass Ctr Retry Interval: " + str(struct.unpack_from('!B', self.app_payload, 201)[0]) + "min\n"
         else:
             details += 'UNRECOGNIZED RESPONSE packet: ' + hex(self.app_packet_type) + '\n'
 
