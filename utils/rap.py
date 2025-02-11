@@ -165,7 +165,7 @@ class RAPPacket:
             details += "Stream Time Series packet:" + self._packet_type_name() + "\n\n"
             self.ts_timestamp_ns = struct.unpack_from('!Q', self.app_payload, 0)[0]
             dt = datetime.fromtimestamp(self.ts_timestamp_ns/1000000000)
-            details += "                timestamp:" + self.ts_timestamp_ns + "\n"
+            details += "                timestamp:" + str(self.ts_timestamp_ns) + "\n"
             details += "                          " + dt.isoformat() + "\n"
             self.chan_ndx = struct.unpack_from('!B' + self.app_payload, 8)[0]
             details += "               chan index:" + struct.unpack_from('!B', self.app_payload, 8)[0]  + "\n"
@@ -229,7 +229,7 @@ class RAPPacket:
             details += '       Get History packet: ' + self._packet_type_name() + '\n'
             self.ts_timestamp_ns = struct.unpack_from('!Q', self.app_payload, 0)[0]
             dt = datetime.fromtimestamp(self.ts_timestamp_ns/1000000000)
-            details += "                timestamp: " + self.ts_timestamp_ns + "\n"
+            details += "                timestamp: " + str(self.ts_timestamp_ns) + "\n"
             details += "                           " + dt.isoformat() + "\n"
             details += "               chan index: " + struct.unpack_from('!B', self.app_payload, 8)[0]  + "\n"
             details += "               media type: " + struct.unpack_from('!H', self.app_payload, 10)[0] + "\n"
@@ -377,17 +377,17 @@ class RAPPacket:
         if self.debug:
             # get Tansport Layer header/packet info
             xporthdr_info += 'Transport: Layer Version: ' + self.layer_version + '; '
-            xporthdr_info += 'Packet Seqnum: ' + self.packet_seqnum + '; '
-            xporthdr_info += 'Segment Index: ' + self.segment_index + '; '
-            xporthdr_info += 'Segment Count: ' + self.segment_count + '; '
-            xporthdr_info += 'Segment Length: ' + self.segment_length + '; '
-            xporthdr_info += 'SegmentHDR CRC: ' + self.segment_hdrcrc + '; '
+            xporthdr_info += 'Packet Seqnum: '  + str(self.packet_seqnum) + '; '
+            xporthdr_info += 'Segment Index: '  + str(self.segment_index) + '; '
+            xporthdr_info += 'Segment Count: '  + str(self.segment_count) + '; '
+            xporthdr_info += 'Segment Length: ' + str(self.segment_length) + '; '
+            xporthdr_info += 'SegmentHDR CRC: ' + str(self.segment_hdrcrc) + '; '
             xporthdr_info += 'Payload CRC: ' + self.segment_payload_crc + '\n'
 
             # get Application Layer header/packet info
             apphdr_info += 'Application: Layer Version: ' + self.app_layer_version + '\n'
             apphdr_info += 'Packet Type: ' + hex(self.app_packet_type) + '\n'
-            apphdr_info += 'Payload Length: ' + self.app_payload_len + '\n'
+            apphdr_info += 'Payload Length: ' + str(self.app_payload_len) + '\n'
 
         # packet details (except seismic binary payload)
         pkt_info = self.packet_details()
