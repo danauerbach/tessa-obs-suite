@@ -157,24 +157,24 @@ class RAPPacket:
         details = ''
 
         if self.app_packet_type == APP_RESPONSE_TYPE_ACK:
-            details += "               ack packet:"+ self._packet_type_name() + "\n"
-            details += "             request type:"+ struct.unpack('!H', self.app_payload[0:2])[0] + "\n"
-            details += "              status_code:"+ struct.unpack('!H', self.app_payload[2:4])[0] + "\n"
+            details += "               ack packet: "+ self._packet_type_name() + "\n"
+            details += "             request type: "+ struct.unpack('!H', self.app_payload[0:2])[0] + "\n"
+            details += "              status_code: "+ struct.unpack('!H', self.app_payload[2:4])[0] + "\n"
 
         elif self.app_packet_type == APP_RESPONSE_TYPE_STREAMED_SERIES:
-            details += "Stream Time Series packet:" + self._packet_type_name() + "\n\n"
+            details += "Stream Time Series packet: " + self._packet_type_name() + "\n\n"
             self.ts_timestamp_ns = struct.unpack_from('!Q', self.app_payload, 0)[0]
             dt = datetime.fromtimestamp(self.ts_timestamp_ns/1000000000)
-            details += "                timestamp:" + str(self.ts_timestamp_ns) + "\n"
-            details += "                          " + dt.isoformat() + "\n"
-            self.chan_ndx = struct.unpack_from('!B' + self.app_payload, 8)[0]
-            details += "               chan index:" + struct.unpack_from('!B', self.app_payload, 8)[0]  + "\n"
-            details += "               media type:" + struct.unpack_from('!H', self.app_payload, 10)[0] + "\n"
-            details += "                # samples:" + struct.unpack_from('!H', self.app_payload, 12)[0] + "\n"
-            details += "                sr factor:" + struct.unpack_from('!b', self.app_payload, 14)[0] + "\n"
-            details += "            sr multiplier:" + struct.unpack_from('!b', self.app_payload, 15)[0] + "\n"
-            details += "           sample bit res:" + struct.unpack_from('!B', self.app_payload, 16)[0] + "\n"
-            details += "      data frames per pkt:" + struct.unpack_from('!B', self.app_payload, 17)[0] + "\n"
+            details += "                timestamp: " + str(self.ts_timestamp_ns) + "\n"
+            details += "                           " + dt.isoformat() + "\n"
+            self.chan_ndx = struct.unpack_from('!B', self.app_payload, 8)[0]
+            details += "               chan index: " + struct.unpack_from('!B', self.app_payload, 8)[0]  + "\n"
+            details += "               media type: " + struct.unpack_from('!H', self.app_payload, 10)[0] + "\n"
+            details += "                # samples: " + struct.unpack_from('!H', self.app_payload, 12)[0] + "\n"
+            details += "                sr factor: " + struct.unpack_from('!b', self.app_payload, 14)[0] + "\n"
+            details += "            sr multiplier: " + struct.unpack_from('!b', self.app_payload, 15)[0] + "\n"
+            details += "           sample bit res: " + struct.unpack_from('!B', self.app_payload, 16)[0] + "\n"
+            details += "      data frames per pkt: " + struct.unpack_from('!B', self.app_payload, 17)[0] + "\n"
 
             data_frame_cnt = struct.unpack_from('!B', self.app_payload, 17)[0]
             self.store_timeseries_info(data_frame_cnt)
@@ -183,7 +183,7 @@ class RAPPacket:
             # ts = struct.unpack_from('!I', self.app_payload, 0)[0]
             # print(ts, type(ts))
 
-            details += " Latest SOH series packet:" + self._packet_type_name() + "\n"
+            details += " Latest SOH series packet: " + self._packet_type_name() + "\n"
             details += "                timestamp: " + struct.unpack_from('!I', self.app_payload, 0)[0] + "\n"
             details += "            status-uptime: " + struct.unpack_from('!I', self.app_payload, 4)[0] + "\n"
             details += "          status-battvolt: " + struct.unpack_from('!f', self.app_payload, 8)[0] + "\n"
