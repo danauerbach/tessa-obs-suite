@@ -202,7 +202,7 @@ if __name__ == '__main__':
             print('reqmon:main: ERROR receiving data msg:', e)
             continue
 
-        time.sleep(1)
+        # time.sleep(1)
 
     quit_evt.wait()
 
