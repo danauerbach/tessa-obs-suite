@@ -234,15 +234,18 @@ def process_file(filename, mqtt_client, topic, debug=False):
 def move_file_to_sent(filepath: str):
 
     # move file to a 'sent' subdirectory of its current location
-    fdir = os.path.dirname(filepath)
+    fn = str(filepath)
+
+
+    fdir = os.path.dirname(fn)
 
     sent_dir = os.path.join(fdir, 'SENT')
     if not os.path.exists(sent_dir):
         os.makedirs(sent_dir)
 
-    fname = os.path.basename(filepath)
+    fname = os.path.basename(fn)
     save_fn = os.path.join(sent_dir, fname)
-    os.rename(filepath, save_fn)
+    os.rename(fn, save_fn)
 
 def paho_setup(endpoint, port, client_id, root_ca, cert, key):
 
