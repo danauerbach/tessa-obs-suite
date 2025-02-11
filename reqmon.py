@@ -82,6 +82,13 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
             client.loop_stop()
         else:
             print('client connected ok...')
+            res, _ = client.subscribe(req_topic, qos=1)
+            if res != mqtt.MQTT_ERR_SUCCESS:
+                print('Client {}: ERROR subscribing to {}'.format(client_id, req_topic))
+                print('shutting down')
+                # quit_evt.set()
+                time.sleep(.25)
+                return None
 
     def on_disconnect(client, userdata, rc):
         print("client disconnected ok")
@@ -100,17 +107,18 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
     reqmon_client.on_subscribe = on_subscribe
     reqmon_client.on_publish = on_publish
     reqmon_client.on_message = on_message
-    reqmon_client.connect(endpoint, port, keepalive=60)
+    reqmon_client.connect(endpoint, port, keepalive=600)
 
-    res, _ = reqmon_client.subscribe(req_topic, qos=1)
-    if res != mqtt.MQTT_ERR_SUCCESS:
-        print('Client {}: ERROR subscribing to {}'.format(client_id, req_topic))
-        print('shutting down')
-        # quit_evt.set()
-        time.sleep(.25)
-        return None
-    else:
-        reqmon_client.loop_start()
+    # res, _ = reqmon_client.subscribe(req_topic, qos=1)
+    # if res != mqtt.MQTT_ERR_SUCCESS:
+    #     print('Client {}: ERROR subscribing to {}'.format(client_id, req_topic))
+    #     print('shutting down')
+    #     # quit_evt.set()
+    #     time.sleep(.25)
+    #     return None
+    # else:
+    print('reqmon:paho_client_setup: starting mqtt loop....')
+    reqmon_client.loop_start()
 
     return reqmon_client
 
