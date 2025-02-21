@@ -19,7 +19,7 @@ from utils.const import *
 from utils.rap import RAPPacket, APP_RESPONSE_TYPE_STATION_CONFIG
 
 QUIT_FLAG = 'quit'
-DATA_FRAMES_PACKET = 2
+DATA_FRAMES_PACKET = 8
 
 def process_commands(seq_num):
 
@@ -156,7 +156,7 @@ def send_start_streaming_request(seq):
     message += struct.pack('!H',1) #PacketType
     message += struct.pack('!H',6) #PacketPayloadLength
     message += struct.pack('!H', 0x0F) #Channels
-    message += struct.pack('!b', 10) #SamplingRate factor
+    message += struct.pack('!b', 1) #SamplingRate factor
     message += struct.pack('!b', 1) #SamplingRate multiplier
     message += struct.pack('!B', 24) #SampleResolution
     message += struct.pack('!B', DATA_FRAMES_PACKET)  #DataframesPerPacket
@@ -525,7 +525,7 @@ def handle_messages(quit_q, data_q: queue.Queue, ser : serial.Serial, debug=Fals
                 result += payload
         else:
             if result:
-                print(f'UNEXPECTED READ: {result}')
+                print(f'UNEXPECTED READ: ({len(result)} bytes): {result}')
                 ser.reset_input_buffer()
             continue
 
@@ -655,7 +655,7 @@ if __name__ == "__main__":
 
     #open the serial port
     print(f'Opening Serial Port: {args.port}')
-    ser = serial.Serial(args.port, baudrate=115200, bytesize=8, parity=serial.PARITY_NONE, timeout=1)
+    ser = serial.Serial(args.port, baudrate=115200, bytesize=8, parity=serial.PARITY_NONE)
     if not ser.is_open:
         print('Serial port NOT OPEN!')
     ser.flush()
