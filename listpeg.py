@@ -4,19 +4,19 @@ from pathlib import Path
 import struct
 import sys
 
-from awscrt import mqtt, http
-from awsiot import mqtt_connection_builder
+#from awscrt import mqtt, http
+#from awsiot import mqtt_connection_builder
 
 from utils.rap import RAPPacket
 
 ### AWS IOT CONSTANTS
-CERT = '../../awstests/tessa-wg-dev.cert.pem'
-KEY = '../../awstests/tessa-wg-dev.private.key'
-ENDPOINT = 'a1cizoe0dy9v99-ats.iot.us-east-2.amazonaws.com'
-PORT = 8883
-ROOT_CA = None
-CLIENT_ID = 'binary_sender'
-TOPIC = 'tessa/data/raw'
+#CERT = '../../awstests/tessa-wg-dev.cert.pem'
+#KEY = '../../awstests/tessa-wg-dev.private.key'
+#ENDPOINT = 'a1cizoe0dy9v99-ats.iot.us-east-2.amazonaws.com'
+#PORT = 8883
+#ROOT_CA = None
+#CLIENT_ID = 'binary_sender'
+#TOPIC = 'tessa/data/raw'
 
 ### RAP CONSTANTS
 SYNC_BYTES = b'PT02'
@@ -43,6 +43,8 @@ def print_packet_info(rappkt, userdata, debug=False):
     print_cnt += 1
     pkt_info = rappkt.header_str()
     print(pkt_info)
+    if debug:
+        print(rappkt.app_pkt_info)
 
 
 def process_file(filename : str, handlers : list, debug=False):
@@ -78,7 +80,7 @@ def process_file(filename : str, handlers : list, debug=False):
                 pkt_segment_len = struct.unpack_from('!H', pkt_start, 12)[0] + 4
 
                 if debug:
-                    print(f'SEGMENT SEQNUM:                   {struct.unpack_from('!H', pkt_start, 6)[0]}')
+                    print(f'SEGMENT SEQNUM:                   {struct.unpack_from("!H", pkt_start, 6)[0]}')
                     print(f'SEGMENT PAYLOAD LEN (+4 for both crc): {pkt_segment_len}')
 
                 payload = pegfl.read(pkt_segment_len)
@@ -239,18 +241,18 @@ if __name__ == '__main__':
                 'teardown': teardown_print
 
             },
-            {
-                'userdata': {
-                    'client': None, 
-                    'client_id': 'rap_pkt_pusher',
-                    'host': 'localhost',
-                    'port': 1883,
-                    'topic': 'tessa/data/raw'
-                    },
-                'setup': setup_pub, 
-                'method': send_packet,
-                'teardown': teardown_pub
-            }
+#           {
+#               'userdata': {
+#                   'client': None, 
+#                   'client_id': 'rap_pkt_pusher',
+#                   'host': 'localhost',
+#                   'port': 1883,
+#                   'topic': 'tessa/data/raw'
+#                   },
+#               'setup': setup_pub, 
+#               'method': send_packet,
+#               'teardown': teardown_pub
+#           }
     ]
 
     for handler in handlers:
