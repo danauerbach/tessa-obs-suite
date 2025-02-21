@@ -57,7 +57,7 @@ def send_packet(rappkt, sta, mqtt_client, topic, qos, debug=False):
     jmsg64 = json.dumps(jpkt)
     
     mqtt_res = mqtt_client.publish(topic=topic, payload=jmsg64, qos=qos)
-    print('waiting to publish msg: {}'.format(mqtt_res.mid))
+    print('waiting to publish msg seqnum/mid: {}/{}; {} bytes'.format(rappkt.packet_seqnum, mqtt_res.mid, len(jmsg64)))
     mqtt_res.wait_for_publish()
 
 
@@ -245,6 +245,7 @@ def move_file_to_sent(filepath: str):
 
     fname = os.path.basename(fn)
     save_fn = os.path.join(sent_dir, fname)
+    print('XMITTER moving raw file {} to {}'.format(fn, save_fn))
     os.rename(fn, save_fn)
 
 def paho_setup(endpoint, port, client_id, root_ca, cert, key):
@@ -272,7 +273,7 @@ def paho_setup(endpoint, port, client_id, root_ca, cert, key):
     mqttc.on_message = on_message
     mqttc.on_publish = on_publish
 
-    mqttc.connect(endpoint, port, 60)
+    mqttc.connect(endpoint, port, keepalive=600)
     mqttc.loop_start()
 
     return mqttc
@@ -349,13 +350,14 @@ if __name__ == '__main__':
 
             for fn in filelist:
                     
-                    if not Path(fn).exists():
-                        if debug:
-                            print('FILE NOT FOUND: {fn}. Skipping...'.format(fn=fn))
-                        continue
-                    fn = Path(fn).absolute()
-                    process_file(fn, mqtt_client, TOPIC, debug)
-                    move_file_to_sent(fn)
+                print('XMITTER reading file:', fn)
+                if not Path(fn).exists():
+                    if debug:
+                        print('FILE NOT FOUND: {fn}. Skipping...'.format(fn=fn))
+                    continue
+                fn = Path(fn).absolute()
+                process_file(fn, mqtt_client, TOPIC, debug)
+                move_file_to_sent(fn)
 
             mqtt_client.loop_stop()
 
