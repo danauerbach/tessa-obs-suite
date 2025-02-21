@@ -118,7 +118,7 @@ class RAPPacket:
         self.app_payload_len = struct.unpack_from('!H', self.segment_payload_raw, 4)[0]
         self.app_payload = self.segment_payload_raw[6:6+self.app_payload_len]
 
-        app_pkt_info = self.message_info()
+        self.app_pkt_info = self.message_info()
 
 
     def __str__(self):
@@ -376,16 +376,16 @@ class RAPPacket:
         apphdr_info = ''
         if self.debug:
             # get Tansport Layer header/packet info
-            xporthdr_info += 'Transport: Layer Version: ' + self.layer_version + '; '
+            xporthdr_info += 'Transport: Layer Version: ' + str(self.layer_version) + '; '
             xporthdr_info += 'Packet Seqnum: '  + str(self.packet_seqnum) + '; '
             xporthdr_info += 'Segment Index: '  + str(self.segment_index) + '; '
             xporthdr_info += 'Segment Count: '  + str(self.segment_count) + '; '
             xporthdr_info += 'Segment Length: ' + str(self.segment_length) + '; '
             xporthdr_info += 'SegmentHDR CRC: ' + str(self.segment_hdrcrc) + '; '
-            xporthdr_info += 'Payload CRC: ' + self.segment_payload_crc + '\n'
+            xporthdr_info += 'Payload CRC: ' + str(self.segment_payload_crc) + '\n'
 
             # get Application Layer header/packet info
-            apphdr_info += 'Application: Layer Version: ' + self.app_layer_version + '\n'
+            apphdr_info += 'Application: Layer Version: ' + str(self.app_layer_version) + '\n'
             apphdr_info += 'Packet Type: ' + hex(self.app_packet_type) + '\n'
             apphdr_info += 'Payload Length: ' + str(self.app_payload_len) + '\n'
 
