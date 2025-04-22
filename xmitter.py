@@ -13,8 +13,6 @@ import time
 import json
 
 import paho.mqtt.client as mqtt
-# from awscrt import mqtt
-# from awsiot import mqtt_connection_builder
 
 from utils.rap import RAPPacket
 
@@ -55,7 +53,7 @@ def send_packet(rappkt, sta, mqtt_client, topic, qos, debug=False):
     }
     # jpkt.update(metadata)
     jmsg64 = json.dumps(jpkt)
-    
+
     mqtt_res = mqtt_client.publish(topic=topic, payload=jmsg64, qos=qos)
     print('waiting to publish msg seqnum/mid: {}/{}; {} bytes'.format(rappkt.packet_seqnum, mqtt_res.mid, len(jmsg64)))
     mqtt_res.wait_for_publish()
@@ -189,7 +187,7 @@ def paho_setup(endpoint, port, client_id, root_ca, cert, key):
 def interrupt_handler(signum, frame):
 
     mqtt_client.loop_stop()
-    
+
     time.sleep(0.5)
     print("shutting down...")
     sys.exit(0)
@@ -213,7 +211,7 @@ if __name__ == '__main__':
     if not aws_dir:
         print('ERROR: TESSA_AWS_DIR env var does not exist. Quitting...', file=sys.stderr)
         sys.exit(1)
-    
+
     thing_name = os.getenv('TESSA_WG_THING_NAME')
     if not thing_name:
         print('ERROR: TESSA_WG_THING_NAME env var does not exist. Quitting....', file=sys.stderr)
@@ -243,10 +241,10 @@ if __name__ == '__main__':
     while True:
 
         # get all files in: $TESSA_DATA_ROOT/<STACODE>/raw/<yyyy-mm-dd>/*.peg
-        filelist = glob.glob(os.path.join(DATA_ROOT_DIR, 
-                                        "*", 
-                                        'raw', 
-                                        '*', 
+        filelist = glob.glob(os.path.join(DATA_ROOT_DIR,
+                                        "*",
+                                        'raw',
+                                        '*',
                                         '*.peg'))
         if filelist:
 
@@ -257,7 +255,7 @@ if __name__ == '__main__':
             mqtt_client = paho_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
 
             for fn in filelist:
-                    
+
                 print('XMITTER reading file:', fn)
                 if not Path(fn).exists():
                     if debug:
