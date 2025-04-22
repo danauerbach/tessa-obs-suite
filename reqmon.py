@@ -66,7 +66,7 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
     def on_message(client, userdata, message):
 
         msg_str = message.payload.decode('utf-8')
-        print('reqmon:on_message:', msg_str)
+        print('reqmon:on_msg:', msg_str)
         msg_dict = json.loads(msg_str)
         
         msgres, errmsg = validate_request(msg_dict)
@@ -81,14 +81,16 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
             print("reqmon:on_connect: Bad connection for {} Returned code: {}".format(client, rc))
             client.loop_stop()
         else:
-            print('client connected ok...')
+            print('reqmon:connected')
             res, _ = client.subscribe(req_topic, qos=1)
             if res != mqtt.MQTT_ERR_SUCCESS:
-                print('Client {}: ERROR subscribing to {}'.format(client_id, req_topic))
+                print('client {}: ERROR subscribing to {}'.format(client_id, req_topic))
                 print('shutting down')
                 # quit_evt.set()
                 time.sleep(.25)
                 return None
+            else:
+                print("client {}: connected and subscribed to topic {}".format(client_id, req_topic))
 
     def on_disconnect(client, userdata, rc):
         print("client disconnected ok")
@@ -97,7 +99,7 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, 
         print("Subscribed: "+str(mid)+" "+str(granted_qos))
 
     def on_publish(client, userdata, mid):
-        print("reqmon:on_connect: {} mid= ".format(client,mid))
+        print("reqmon:on_publish: {} mid= ".format(client,mid))
 
 
     reqmon_client = mqtt.Client(client_id=client_id)
@@ -179,7 +181,7 @@ if __name__ == '__main__':
     ROOT_CA = os.path.join(aws_dir, 'AmazonRootCA1.pem')
 
 
-    CLIENT_ID = 'tessa-wg-reqmon'
+    CLIENT_ID = thing_name
     REQ_TOPIC = 'tessa/request'
     ACK_TOPIC = 'tessa/reqack'
 
@@ -196,14 +198,14 @@ if __name__ == '__main__':
     while not quit_evt.is_set():
 
         try:
-            req_dict = req_q.get(block=True, timeout=1)
+            req_dict = req_q.get(block=True, timeout=5)
             req_q.task_done()
             reqmon_client.publish(ACK_TOPIC, json.dumps(req_dict).encode("utf-8"), qos=1)
             if req_dict['status'].upper() == 'OK':
                 write_request(DATA_ROOT_DIR, req_dict)
 
         except queue.Empty as e:
-            # print(f'reqmon:main: Ignoring empty request.')
+            print(f'reqmon: no msg rcvd')
             continue
 
         except Exception as e:
@@ -216,4 +218,5 @@ if __name__ == '__main__':
 
     # gives threads a chance to exit cleanly    
     reqmon_client.loop_stop()
+    reqmon_client.disconnect()
     
