@@ -55,6 +55,7 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, ack_topic, 
         time.sleep(.25)
         return None
     else:
+        print("starting list loop for topic: ", ack_topic)
         req_client.loop_start()
 
     return req_client
