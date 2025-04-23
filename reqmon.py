@@ -205,7 +205,7 @@ if __name__ == '__main__':
                 write_request(DATA_ROOT_DIR, req_dict)
 
         except queue.Empty as e:
-            print(f'reqmon: no msg rcvd')
+            print('reqmon:main: no msg rcvd')
             continue
 
         except Exception as e:
