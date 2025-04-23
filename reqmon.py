@@ -185,6 +185,12 @@ if __name__ == '__main__':
     REQ_TOPIC = 'tessa/request'
     ACK_TOPIC = 'tessa/reqack'
 
+    print('reqmon: ENDPOINT: {}', ENDPOINT)
+    print('reqmon: PORT: {}', PORT)
+    print('reqmon: CERT: {}', CERT)
+    print('reqmon:  KEY: {}', KEY)
+    print('reqmon: ROOT: {}', ROOT_CA)
+
     # threadsafe quit flag for qhen something goes wrong in a thread
     quit_evt = threading.Event()
 
