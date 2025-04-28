@@ -80,7 +80,7 @@ def process_file(filename, mqtt_client, topic, debug=False):
 
         # extract sta_code from path
         pathparts = fn.split(os.sep)
-        sta_code = pathparts[3].lower()
+        sta_code = pathparts[4].lower() ### RELLY NEED TO USE ENV VAR TO FIND correct PATH SEGMENT FOR STA-CODE
 
         while True:
 
