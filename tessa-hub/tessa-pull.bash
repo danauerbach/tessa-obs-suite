@@ -10,7 +10,7 @@ echo "SYNC FILE LOG: $s3sync_log_fn"
 
 aws s3 sync s3://tessa-wg-data ${TESSA_WG_DATA_ROOT} > ${TESSA_WG_DATA_ROOT}/${s3sync_log_fn}
 
-/home/tessa/dev/tessa/tessa-pull.py "${TESSA_WG_DATA_ROOT}/${s3sync_log_fn}"
+/home/tessa/dev/tessa/tessa-obs-suite/tessa-hub/tessa-pull.py "${TESSA_WG_DATA_ROOT}/${s3sync_log_fn}"
 
 fnroot=$(basename "${TESSA_WG_DATA_ROOT}/${s3sync_log_fn}" .txt)
 filelist_fn="${TESSA_WG_DATA_ROOT}/${fnroot}_ds_list.txt"
