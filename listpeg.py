@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import argparse
+import base64
+import json
 from pathlib import Path
 import struct
 import sys
@@ -46,7 +48,6 @@ def print_packet_info(rappkt, userdata, debug=False):
     if debug:
         print(rappkt.app_pkt_info)
 
-
 def process_file(filename : str, handlers : list, debug=False):
 
     if debug:
@@ -68,13 +69,11 @@ def process_file(filename : str, handlers : list, debug=False):
                 if not found_first_packet and debug:
                     print(f"No sync bytes ({SYNC_BYTES}) found in file {filename}.")
                 break
+
+            pkt_start = pegfl.read(14)  ## read until we get to the SEGMENT_LENGTH in the transport section of the packet.
             
             found_first_packet = True
             
-            # pegfl.seek(offset)
-
-            pkt_start = pegfl.read(14)  ## read until we get to the SEGMENT_LENGTH in the transport section of the packet.
-
             if (len(pkt_start) == 14) and (pkt_start[:4] == b'PT02'):
 
                 pkt_segment_len = struct.unpack_from('!H', pkt_start, 12)[0] + 4
@@ -119,98 +118,52 @@ def process_file(filename : str, handlers : list, debug=False):
             print(f'File {filename} not read to the end!!!')
 
 
+def process_pegraw_file(filename : str, handlers : list, debug=False):
 
-def send_packet(rappkt, userdata, debug):
+    # if debug:
+    print(f'###Processing file: {filename}.')
 
-    global rec_cnt
-    payload = rappkt.full_packet()
-    pub_future = userdata['client'].publish(topic=userdata['topic'], payload=payload, qos=mqtt.QoS.AT_LEAST_ONCE)
-    _ = pub_future[0].result()
+    with open(fn, 'rb') as pegfl:
 
-def setup_pub(userdata):
+        SYNC_BYTES = '{"'
 
-    # Callback when connection is accidentally lost.
-    def aws_on_connection_interrupted(connection, error, **kwargs):
-        print("Connection interrupted. error: {}".format(error))
+        seq_num : int = -1
+        pkt_start : bytes = b''
+        pkt : bytes = b''
+        offset : int = 0
+        found_first_packet : bool = False
 
+        data_s = pegfl.read().decode(encoding="ASCII")
 
-    # Callback when an interrupted connection is re-established.
-    def aws_on_connection_resumed(connection, return_code, session_present, **kwargs):
-        print("Connection resumed. return_code: {} session_present: {}".format(return_code, session_present))
+        while data_s:
 
-        if return_code == mqtt.ConnectReturnCode.ACCEPTED and not session_present:
-            print("Session did not persist. Resubscribing to existing topics...")
-            resubscribe_future, _ = connection.resubscribe_existing_topics()
+            # offset = move_to_next_packet(pegfl, SYNC_BYTES, offset)
+            offset = data_s.find(SYNC_BYTES)
 
-            # Cannot synchronously wait for resubscribe result because we're on the connection's event-loop thread,
-            # evaluate result with a callback instead.
-            resubscribe_future.add_done_callback(on_resubscribe_complete)
+            if offset == -1:
+                if not found_first_packet and debug:
+                    print(f"No sync bytes ({SYNC_BYTES}) found in file {filename}.")
+                break
+            found_first_packet = True
+            
+            json_len = data_s.find('"}') + 2 - offset
 
-    def on_resubscribe_complete(resubscribe_future):
-        resubscribe_results = resubscribe_future.result()
-        print("Resubscribe results: {}".format(resubscribe_results))
+            pkt_json = data_s[:json_len]
+            jrec = json.loads(pkt_json)
+            pkt64 = jrec['pegpkt']
+            pegpkt = base64.b64decode(pkt64)
+            
+            data_s = data_s[json_len:]
 
-        for topic, qos in resubscribe_results['topics']:
-            if qos is None:
-                sys.exit("Server rejected resubscribe to topic: {}".format(topic))
+            if len(pegpkt) > 0:
 
+                rappkt = RAPPacket(pegpkt[4:], debug)
+                if (seq_num > -1) and (rappkt.seq_num != seq_num + 1):
+                    print(f'{rappkt.packet_seqnum - seq_num:>9} PACKETs MISSING')
 
-    # Callback when the connection successfully connects
-    def aws_on_connection_success(connection, callback_data):
-        assert isinstance(callback_data, mqtt.OnConnectionSuccessData)
-        print("Connection Successful with return code: {} session present: {}".format(callback_data.return_code, callback_data.session_present))
+                for handler in handlers:
+                    handler["method"](rappkt, handler['userdata'], debug)
 
-    # Callback when a connection attempt fails
-    def aws_on_connection_failure(connection, callback_data):
-        assert isinstance(callback_data, mqtt.OnConnectionFailureData)
-        print("Connection failed with error code: {}".format(callback_data.error))
-
-    # Callback when a connection has been disconnected or shutdown successfully
-    def aws_on_connection_closed(connection, callback_data):
-        print("Connection closed")
-
-
-    # userdata['client'] = mqtt_client.Client(mqtt_client.CallbackAPIVersion.VERSION2, userdata['client_id'], userdata=userdata)
-    # userdata['client'].on_connect = pub_on_connect
-    # userdata['client'].on_disconnect = pub_on_disconnect
-    # userdata['client'].on_publish = pub_on_pub
-    # userdata['client'].connect(
-    #     userdata['host'],
-    #     userdata['port']
-    # )
-    # userdata['client'].loop_start()
-
-    mqtt_connection = mqtt_connection_builder.mtls_from_path(
-        endpoint=ENDPOINT,
-        port=PORT,
-        cert_filepath=CERT,
-        pri_key_filepath=KEY,
-        ca_filepath='',
-        on_connection_interrupted=aws_on_connection_interrupted,
-        on_connection_resumed=aws_on_connection_resumed,
-        client_id=CLIENT_ID,
-        clean_session=False,
-        keep_alive_secs=30,
-        http_proxy_options=None,
-        on_connection_success=aws_on_connection_success,
-        on_connection_failure=aws_on_connection_failure,
-        on_connection_closed=aws_on_connection_closed,
-    )
-    connect_future = mqtt_connection.connect()
-
-    # Future.result() waits until a result is available
-    connect_future.result()
-    print("Connected!")
-
-    userdata['client'] = mqtt_connection
-
-def teardown_pub(userdata):
-
-    print('teardown:', userdata['client_id'].upper())
-    if userdata['client']:
-        disconnect_future = userdata['client'].disconnect()
-        disconnect_future.result()
-        print(f"Disconnected after sending {rec_cnt} bytes")
 
 def teardown_print(userdata):
 
@@ -221,6 +174,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="list Pegasus raw packets in a file(s)")
     parser.add_argument("--debug", "-d", action="store_true", help="Enable debug/verbose mode")
+    parser.add_argument("--json", "-j", action="store_true", help="Read PEGRAW in mqtt-json file(s)")
     parser.add_argument("fileglob", action="store", nargs='+', help="filename(s) to read")
 
     args = parser.parse_args()
@@ -240,19 +194,7 @@ if __name__ == '__main__':
                 'method': print_packet_info,
                 'teardown': teardown_print
 
-            },
-#           {
-#               'userdata': {
-#                   'client': None, 
-#                   'client_id': 'rap_pkt_pusher',
-#                   'host': 'localhost',
-#                   'port': 1883,
-#                   'topic': 'tessa/data/raw'
-#                   },
-#               'setup': setup_pub, 
-#               'method': send_packet,
-#               'teardown': teardown_pub
-#           }
+            }
     ]
 
     for handler in handlers:
@@ -267,7 +209,10 @@ if __name__ == '__main__':
                     print(f'FILE NOT FOUND: {fn}. Skipping...')
                 continue
             fn = Path(fn).absolute()
-            process_file(fn, handlers, debug)
+            if args.json:
+                process_pegraw_file(fn, handlers, debug)
+            else:
+                process_file(fn, handlers, debug)
 
     for handler in handlers:
         if handler.get('teardown'):
