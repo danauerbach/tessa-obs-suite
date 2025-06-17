@@ -89,6 +89,7 @@ class RAPPacket:
         self.loc_code = ''
         self.sample_rate = 0
         self.ts_timestamp_ns = 0
+        self.crc_bad = False
 
         # check hdr CRC
         this_hdr_CRC = self.crcPegasus(self.packet[:10])
@@ -98,6 +99,8 @@ class RAPPacket:
             # print("TL Header CRC matches")
         else:
             print("TL Header CRC DOES NOT MATCH (read vs computed):", self.segment_hdrcrc, 'vs', this_hdr_CRC)
+            print("Will not process as a timeseries packet")
+            self.crc_bad = True
 
         # get payload
         self.segment_payload_raw = self.packet[12:12+self.segment_length]
@@ -110,6 +113,8 @@ class RAPPacket:
             # print("Segment payload CRC matches")
         else:
             print("Segment payload CRC DOES NOT MATCH (read vs computed):", self.segment_payload_crc, "vs", this_payload_crc)
+            print("Will not process as a timeseries packet")
+            self.crc_bad = True
 
         # Get App packet info
         self.app_layer_version = struct.unpack_from('!H', self.segment_payload_raw, 0)[0]
@@ -401,9 +406,9 @@ class RAPPacket:
     
     def is_timeseries(self) -> bool:
 
-        return self.app_packet_type in [APP_RESPONSE_TYPE_HISTORY_REPEAT,
+        return (self.app_packet_type in [APP_RESPONSE_TYPE_HISTORY_REPEAT,
                                         APP_RESPONSE_TYPE_HISTORY_GET_NEXT,
-                                        APP_RESPONSE_TYPE_STREAMED_SERIES]
+                                        APP_RESPONSE_TYPE_STREAMED_SERIES]) and not self.crc_bad
 
     
     def _packet_type_name(self) -> str:
