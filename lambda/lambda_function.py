@@ -39,7 +39,7 @@ def convert_rap2ms(rappkt : RAPPacket, net, sta, loc : str, stachanmap : dict, m
     start_byte = rappkt.steim2["byte_start"]
     end_byte = start_byte + rappkt.steim2["byte_cnt"] - 1
 
-    print(f'sta={sta.lower()}    sr={str(round(sample_rate))}    channdx={rappkt.chan_ndx}')
+    print(f'starttime={rappkt.ts_timestamp_ns}   sta={sta.lower()}    sr={str(round(sample_rate))}    channdx={rappkt.chan_ndx}')
 
     msmgr.set_network(net.upper())
     msmgr.set_station(sta.upper())

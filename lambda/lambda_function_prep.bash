@@ -23,4 +23,6 @@ rm -rf __pycache__
 zip -r ../deployment_package.zip *  > /dev/null
 cd ..
 zip -r deployment_package.zip lambda_function.py utils
+cd ..
+zip -r lambda/deployment_package.zip utils
 
