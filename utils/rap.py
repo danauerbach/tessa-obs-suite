@@ -465,7 +465,7 @@ class RAPPacket:
         if self.app_packet_type == 0xFFFF:
             return 'APP_RESPONSE_TYPE_UNKNOWN'
 
-        return 'UNKNOWN PACKET TYPE: ' + self.app_packet_type
+        return 'UNKNOWN PACKET TYPE: ' + str(self.app_packet_type)
 
     def packet_id(self) -> str:
 
