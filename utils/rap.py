@@ -93,7 +93,7 @@ class RAPPacket:
         # check that we at least have enough bytes for a complete header...
         if len(packet) < 14:
 
-            print("ERROR: Incomplete Packet (<14 bytes). Skipping packet")
+            print("ERROR: Incomplete Packet ({} bytes). Skipping packet".format(len(packet)))
             self.incomplete_packet = True
 
         else:
@@ -120,7 +120,7 @@ class RAPPacket:
             # get payload and check length is what we expect
             self.segment_payload_raw = self.packet[12:12+self.segment_length]
             if len(self.segment_payload_raw) < self.segment_length:
-                print("ERROR: Incomplete Segment. Skipping packet")
+                print("ERROR: Incomplete Segment {} vs {}. Skipping packet".format(len(self.segment_payload_raw) , self.segment_length))
                 self.incomplete_packet = True
 
             # if packet complete and good header CRC, read and check full segment payload CRC
