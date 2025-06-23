@@ -72,13 +72,6 @@ class RAPPacket:
         self.payload_length = len(self.packet)
         self.app_packet_type = APP_RESPONSE_TYPE_UNKNOWN
         self.app_layer_version = 0
-        self.layer_version  = struct.unpack_from('!H', self.packet, 0)[0]
-        self.packet_seqnum  = struct.unpack_from('!H', self.packet, 2)[0]
-        self.segment_index  = struct.unpack_from('!H', self.packet, 4)[0]
-        self.segment_count  = struct.unpack_from('!H', self.packet, 6)[0]
-        self.segment_length = struct.unpack_from('!H', self.packet, 8)[0]
-        self.segment_hdrcrc = struct.unpack_from('!H', self.packet, 10)[0]
-        self.crcPegasus = crcmod.predefined.mkCrcFun('crc-aug-ccitt')
         self.steim2 = {
             'byte_cnt': 0,
             'byte_start': 0,
@@ -97,43 +90,59 @@ class RAPPacket:
         self.crc_bad = False
         self.incomplete_packet = False
 
-        # check hdr CRC
-        this_hdr_CRC = self.crcPegasus(self.packet[:10])
-        # check header CRC:
-        if self.segment_hdrcrc == this_hdr_CRC:
-            pass
-            # print("TL Header CRC matches")
-        else:
-            print("TL Header CRC DOES NOT MATCH (read vs computed):", self.segment_hdrcrc, 'vs', this_hdr_CRC)
-            print("Will not process as a timeseries packet")
-            self.crc_bad = True
+        # check that we at least have enough bytes for a complete header...
+        if len(packet) < 14:
 
-        # get payload
-        self.segment_payload_raw = self.packet[12:12+self.segment_length]
-        if len(self.segment_payload_raw) < 12 + self.segment_length:
-            print("Incomplete packet")
-            print("Will not process as a timeseries packet")
+            print("ERROR: Incomplete Packet. Skipping packet")
             self.incomplete_packet = True
 
-        if not (self.crc_bad or self.incomplete_packet):
+        else:
 
-            # Check payload CRC
-            self.segment_payload_crc = struct.unpack_from('!H', self.packet, 12+self.segment_length)[0]
-            this_payload_crc = self.crcPegasus(self.segment_payload_raw)
-            if self.segment_payload_crc == this_payload_crc:
+            self.layer_version  = struct.unpack_from('!H', self.packet, 0)[0]
+            self.packet_seqnum  = struct.unpack_from('!H', self.packet, 2)[0]
+            self.segment_index  = struct.unpack_from('!H', self.packet, 4)[0]
+            self.segment_count  = struct.unpack_from('!H', self.packet, 6)[0]
+            self.segment_length = struct.unpack_from('!H', self.packet, 8)[0]
+            self.segment_hdrcrc = struct.unpack_from('!H', self.packet, 10)[0]
+            self.crcPegasus = crcmod.predefined.mkCrcFun('crc-aug-ccitt')
+
+            # check hdr CRC
+            this_hdr_CRC = self.crcPegasus(self.packet[:10])
+            # check header CRC:
+            if self.segment_hdrcrc == this_hdr_CRC:
                 pass
-                # print("Segment payload CRC matches")
+                # print("TL Header CRC matches")
             else:
-                print("Segment payload CRC DOES NOT MATCH (read vs computed):", self.segment_payload_crc, "vs", this_payload_crc)
+                print("TL Header CRC DOES NOT MATCH (read vs computed):", self.segment_hdrcrc, 'vs', this_hdr_CRC)
                 print("Will not process as a timeseries packet")
                 self.crc_bad = True
 
-            # Get App packet info
-            self.app_layer_version = struct.unpack_from('!H', self.segment_payload_raw, 0)[0]
-            # self.app_packet_type   = binascii.hexlify(self.segment_payload_raw[2:4])
-            self.app_packet_type   = struct.unpack_from('!H', self.segment_payload_raw, 2)[0]
-            self.app_payload_len = struct.unpack_from('!H', self.segment_payload_raw, 4)[0]
-            self.app_payload = self.segment_payload_raw[6:6+self.app_payload_len]
+            # get payload and check length is what we expect
+            self.segment_payload_raw = self.packet[12:12+self.segment_length]
+            if len(self.segment_payload_raw) < 12 + self.segment_length:
+                print("ERROR: Incomplete Packet. Skipping packet")
+                self.incomplete_packet = True
+
+            # if packet complete and good header CRC, read and check full segment payload CRC
+            if not (self.crc_bad or self.incomplete_packet):
+
+                # Check payload CRC
+                self.segment_payload_crc = struct.unpack_from('!H', self.packet, 12+self.segment_length)[0]
+                this_payload_crc = self.crcPegasus(self.segment_payload_raw)
+                if self.segment_payload_crc == this_payload_crc:
+                    pass
+                    # print("Segment payload CRC matches")
+                else:
+                    print("Segment payload CRC DOES NOT MATCH (read vs computed):", self.segment_payload_crc, "vs", this_payload_crc)
+                    print("Will not process as a timeseries packet")
+                    self.crc_bad = True
+
+                # Get App packet info
+                self.app_layer_version = struct.unpack_from('!H', self.segment_payload_raw, 0)[0]
+                # self.app_packet_type   = binascii.hexlify(self.segment_payload_raw[2:4])
+                self.app_packet_type   = struct.unpack_from('!H', self.segment_payload_raw, 2)[0]
+                self.app_payload_len = struct.unpack_from('!H', self.segment_payload_raw, 4)[0]
+                self.app_payload = self.segment_payload_raw[6:6+self.app_payload_len]
 
         self.app_pkt_info = self.message_info()
 
