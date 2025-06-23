@@ -90,6 +90,7 @@ class RAPPacket:
         self.sample_rate = 0
         self.ts_timestamp_ns = 0
         self.crc_bad = False
+        self.incomplete_packet = False
 
         # check hdr CRC
         this_hdr_CRC = self.crcPegasus(self.packet[:10])
@@ -107,9 +108,9 @@ class RAPPacket:
         if len(self.segment_payload_raw) < 12 + self.segment_length:
             print("Incomplete packet")
             print("Will not process as a timeseries packet")
-            self.crc_bad = True
+            self.incomplete_packet = True
 
-        if not self.crc_bad:
+        if not (self.crc_bad or self.incomplete_packet):
 
             # Check payload CRC
             self.segment_payload_crc = struct.unpack_from('!H', self.packet, 12+self.segment_length)[0]
@@ -385,23 +386,28 @@ class RAPPacket:
 
         xporthdr_info = ''
         apphdr_info = ''
-        if self.debug:
-            # get Tansport Layer header/packet info
-            xporthdr_info += 'Transport: Layer Version: ' + str(self.layer_version) + '; '
-            xporthdr_info += 'Packet Seqnum: '  + str(self.packet_seqnum) + '; '
-            xporthdr_info += 'Segment Index: '  + str(self.segment_index) + '; '
-            xporthdr_info += 'Segment Count: '  + str(self.segment_count) + '; '
-            xporthdr_info += 'Segment Length: ' + str(self.segment_length) + '; '
-            xporthdr_info += 'SegmentHDR CRC: ' + str(self.segment_hdrcrc) + '; '
-            xporthdr_info += 'Payload CRC: ' + str(self.segment_payload_crc) + '\n'
+        pkt_info = ''
+        if not (self.crc_bad or self.incomplete_packet):
+            if self.debug:
+                # get Tansport Layer header/packet info
+                xporthdr_info += 'Transport: Layer Version: ' + str(self.layer_version) + '; '
+                xporthdr_info += 'Packet Seqnum: '  + str(self.packet_seqnum) + '; '
+                xporthdr_info += 'Segment Index: '  + str(self.segment_index) + '; '
+                xporthdr_info += 'Segment Count: '  + str(self.segment_count) + '; '
+                xporthdr_info += 'Segment Length: ' + str(self.segment_length) + '; '
+                xporthdr_info += 'SegmentHDR CRC: ' + str(self.segment_hdrcrc) + '; '
+                xporthdr_info += 'Payload CRC: ' + str(self.segment_payload_crc) + '\n'
 
-            # get Application Layer header/packet info
-            apphdr_info += 'Application: Layer Version: ' + str(self.app_layer_version) + '\n'
-            apphdr_info += 'Packet Type: ' + hex(self.app_packet_type) + '\n'
-            apphdr_info += 'Payload Length: ' + str(self.app_payload_len) + '\n'
+                # get Application Layer header/packet info
+                apphdr_info += 'Application: Layer Version: ' + str(self.app_layer_version) + '\n'
+                apphdr_info += 'Packet Type: ' + hex(self.app_packet_type) + '\n'
+                apphdr_info += 'Payload Length: ' + str(self.app_payload_len) + '\n'
 
-        # packet details (except seismic binary payload)
-        pkt_info = self.packet_details()
+            # packet details (except seismic binary payload)
+            pkt_info = self.packet_details()
+
+        else:
+            pkt_info = 'PACKET ERROR: BAD_CRC:{}   INCOMPLETE:{}'.format(self.crc_bad, self.incomplete_packet)
 
         return xporthdr_info + apphdr_info + pkt_info
     
