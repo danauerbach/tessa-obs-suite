@@ -103,7 +103,7 @@ def process_file(filename : str, handlers : list, debug=False):
                         print('Error reading file {filename}.')
                 break
 
-            if len(pkt) > 0:
+            if len(pkt) == (14 + pkt_segment_len):
 
                 rappkt = RAPPacket(pkt[4:], debug)
                 if (seq_num > -1) and (rappkt.seq_num != seq_num + 1):
@@ -113,6 +113,9 @@ def process_file(filename : str, handlers : list, debug=False):
                     handler["method"](rappkt, handler['userdata'], debug)
                 # pkt_info = rappkt.header_str()
                 # print(pkt_info)
+
+            else:
+                print(f'[file: {filename}] Skipping incomplete packet.')
 
         if pegfl.tell() < Path(filename).stat().st_size:
             print(f'File {filename} not read to the end!!!')
