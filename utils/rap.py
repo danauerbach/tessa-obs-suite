@@ -104,17 +104,23 @@ class RAPPacket:
 
         # get payload
         self.segment_payload_raw = self.packet[12:12+self.segment_length]
-
-        # Check payload CRC
-        self.segment_payload_crc = struct.unpack_from('!H', self.packet, 12+self.segment_length)[0]
-        this_payload_crc = self.crcPegasus(self.segment_payload_raw)
-        if self.segment_payload_crc == this_payload_crc:
-            pass
-            # print("Segment payload CRC matches")
-        else:
-            print("Segment payload CRC DOES NOT MATCH (read vs computed):", self.segment_payload_crc, "vs", this_payload_crc)
+        if len(self.segment_payload_raw) < 12 + self.segment_length:
+            print("Incomplete packet")
             print("Will not process as a timeseries packet")
             self.crc_bad = True
+
+        if not self.crc_bad:
+
+            # Check payload CRC
+            self.segment_payload_crc = struct.unpack_from('!H', self.packet, 12+self.segment_length)[0]
+            this_payload_crc = self.crcPegasus(self.segment_payload_raw)
+            if self.segment_payload_crc == this_payload_crc:
+                pass
+                # print("Segment payload CRC matches")
+            else:
+                print("Segment payload CRC DOES NOT MATCH (read vs computed):", self.segment_payload_crc, "vs", this_payload_crc)
+                print("Will not process as a timeseries packet")
+                self.crc_bad = True
 
         # Get App packet info
         self.app_layer_version = struct.unpack_from('!H', self.segment_payload_raw, 0)[0]
