@@ -119,7 +119,7 @@ class RAPPacket:
 
             # get payload and check length is what we expect
             self.segment_payload_raw = self.packet[12:12+self.segment_length]
-            if len(self.segment_payload_raw) < 12 + self.segment_length:
+            if len(self.segment_payload_raw) < self.segment_length:
                 print("ERROR: Incomplete Segment. Skipping packet")
                 self.incomplete_packet = True
 
