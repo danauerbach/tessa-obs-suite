@@ -330,6 +330,8 @@ class RAPPacket:
             details += "Auto Mass Ctr Low Holdoff Time: " + str(struct.unpack_from('!B', self.app_payload, 199)[0]) + "secs\n"
             details += "     Auto Mass Ctr Max Retries: " + str(struct.unpack_from('!B', self.app_payload, 200)[0]) + "\n"
             details += "  Auto Mass Ctr Retry Interval: " + str(struct.unpack_from('!B', self.app_payload, 201)[0]) + "min\n"
+        elif self.app_packet_type == APP_RESPONSE_TYPE_UNKNOWN:
+            details += 'PACKET ERROR: BAD_CRC:{}   INCOMPLETE:{}'.format(self.crc_bad, self.incomplete_packet)
         else:
             details += 'UNRECOGNIZED RESPONSE packet: ' + hex(self.app_packet_type) + '\n'
 
@@ -405,11 +407,8 @@ class RAPPacket:
                 apphdr_info += 'Packet Type: ' + hex(self.app_packet_type) + '\n'
                 apphdr_info += 'Payload Length: ' + str(self.app_payload_len) + '\n'
 
-            # packet details (except seismic binary payload)
-            pkt_info = self.packet_details()
-
-        else:
-            pkt_info = 'PACKET ERROR: BAD_CRC:{}   INCOMPLETE:{}'.format(self.crc_bad, self.incomplete_packet)
+        # packet details (except seismic binary payload)
+        pkt_info = self.packet_details()
 
         return xporthdr_info + apphdr_info + pkt_info
     
