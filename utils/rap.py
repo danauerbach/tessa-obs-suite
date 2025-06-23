@@ -18,6 +18,7 @@ APP_REQUEST_TYPE_GET_NEXT_HISTORY   = 0x0006
 APP_REQUEST_TYPE_REPEAT_HISTORY     = 0x0007
 APP_REQUEST_TYPE_STATION_CONFIG     = 0x0008
 
+APP_RESPONSE_TYPE_UNKNOWN           = 0xFFFF
 APP_RESPONSE_TYPE_ACK               = 0x8000
 APP_RESPONSE_TYPE_STREAMED_SERIES   = 0x8001
 APP_RESPONSE_TYPE_RESERVED          = 0x8002
@@ -67,6 +68,7 @@ class RAPPacket:
         self.packet = packet
         self.debug = debug
         self.payload_length = len(self.packet)
+        self.app_packet_type = APP_RESPONSE_TYPE_UNKNOWN
         self.layer_version  = struct.unpack_from('!H', self.packet, 0)[0]
         self.packet_seqnum  = struct.unpack_from('!H', self.packet, 2)[0]
         self.segment_index  = struct.unpack_from('!H', self.packet, 4)[0]
@@ -441,6 +443,7 @@ class RAPPacket:
             return 'APP_REQUEST_TYPE_REPEAT_HISTORY'
         if self.app_packet_type == 0x0008:
             return 'APP_REQUEST_TYPE_STATION_CONFIG'
+
         if self.app_packet_type == 0x8000:
             return 'APP_RESPONSE_TYPE_ACK'
         if self.app_packet_type == 0x8001:
@@ -459,6 +462,9 @@ class RAPPacket:
             return 'APP_RESPONSE_TYPE_HISTORY_REPEAT'
         if self.app_packet_type == 0x8008:
             return 'APP_RESPONSE_TYPE_STATION_CONFIG'
+
+        if self.app_packet_type == 0xFFFF:
+            return 'APP_RESPONSE_TYPE_UNKNOWN'
 
         return 'UNKNOWN PACKET TYPE: ' + self.app_packet_type
 
