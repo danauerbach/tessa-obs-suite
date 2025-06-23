@@ -67,8 +67,11 @@ class RAPPacket:
 
         self.packet = packet
         self.debug = debug
+        self.app_payload = 0
+        self.app_payload_len = 0
         self.payload_length = len(self.packet)
         self.app_packet_type = APP_RESPONSE_TYPE_UNKNOWN
+        self.app_layer_version = 0
         self.layer_version  = struct.unpack_from('!H', self.packet, 0)[0]
         self.packet_seqnum  = struct.unpack_from('!H', self.packet, 2)[0]
         self.segment_index  = struct.unpack_from('!H', self.packet, 4)[0]
@@ -125,12 +128,12 @@ class RAPPacket:
                 print("Will not process as a timeseries packet")
                 self.crc_bad = True
 
-        # Get App packet info
-        self.app_layer_version = struct.unpack_from('!H', self.segment_payload_raw, 0)[0]
-        # self.app_packet_type   = binascii.hexlify(self.segment_payload_raw[2:4])
-        self.app_packet_type   = struct.unpack_from('!H', self.segment_payload_raw, 2)[0]
-        self.app_payload_len = struct.unpack_from('!H', self.segment_payload_raw, 4)[0]
-        self.app_payload = self.segment_payload_raw[6:6+self.app_payload_len]
+            # Get App packet info
+            self.app_layer_version = struct.unpack_from('!H', self.segment_payload_raw, 0)[0]
+            # self.app_packet_type   = binascii.hexlify(self.segment_payload_raw[2:4])
+            self.app_packet_type   = struct.unpack_from('!H', self.segment_payload_raw, 2)[0]
+            self.app_payload_len = struct.unpack_from('!H', self.segment_payload_raw, 4)[0]
+            self.app_payload = self.segment_payload_raw[6:6+self.app_payload_len]
 
         self.app_pkt_info = self.message_info()
 
