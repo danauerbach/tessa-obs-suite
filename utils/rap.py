@@ -426,7 +426,9 @@ class RAPPacket:
     
     def header_str(self) -> str:
 
-        hdr = str(self.packet_seqnum) + '   ' + str(self.packet_id()) + '   ' + str(len(self.packet))
+        hdr = 'INCOMPLETE PACKET HEADER'
+        if not self.incomplete_packet:
+            hdr = str(self.packet_seqnum) + '   ' + str(self.packet_id()) + '   ' + str(len(self.packet))
         return hdr
     
     def is_timeseries(self) -> bool:
