@@ -41,6 +41,9 @@ def print_packet_info(rappkt: RAPPacket, debug=False):
 
 def send_packet(rappkt, sta, mqtt_client, topic, qos, debug=False):
 
+    if rappkt.incomplete_packet:
+        return
+
     pkt = rappkt.full_packet()
     # metadata = rappkt.packet_metadata()
 
@@ -172,14 +175,16 @@ def paho_setup(endpoint, port, client_id, root_ca, cert, key):
     def on_message(client, userdata, msg):
         print(msg.topic+" "+str(msg.payload))
 
-    mqttc = mqtt.Client(client_id=client_id)
+    mqttc = mqtt.Client(client_id=client_id, clean_session=False, protocol=mqtt.MQTTv311)
     mqttc.tls_set(root_ca, certfile=cert, keyfile=key, tls_version=ssl.PROTOCOL_TLSv1_2, cert_reqs=ssl.CERT_REQUIRED)
+    mqttc.tls_insecure_set(False)            # don’t bypass verification
     mqttc.on_connect = on_connect
     mqttc.on_disconnect = on_disconnect
     mqttc.on_message = on_message
     mqttc.on_publish = on_publish
 
-    mqttc.connect(endpoint, port, keepalive=600)
+    mqttc.reconnect_delay_set(min_delay=1, max_delay=20)
+    mqttc.connect(endpoint, port, keepalive=20)
     mqttc.loop_start()
 
     return mqttc
@@ -237,6 +242,7 @@ if __name__ == '__main__':
     # filelist = args.fileglob
     debug = args.debug
 
+    mqtt_client = paho_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
 
     while True:
 
@@ -252,7 +258,7 @@ if __name__ == '__main__':
             if args.debug:
                 print('FILES: {}'.format(filelist))
 
-            mqtt_client = paho_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
+            # mqtt_client = paho_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY)
 
             for fn in filelist:
 
@@ -265,6 +271,8 @@ if __name__ == '__main__':
                 process_file(fn, mqtt_client, TOPIC, debug)
                 move_file_to_sent(fn)
 
-            mqtt_client.loop_stop()
+            # mqtt_client.loop_stop()
 
         time.sleep(15)
+
+    # mqtt_client.loop_stop() ### called in interrupt handler

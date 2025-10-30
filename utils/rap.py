@@ -66,11 +66,13 @@ class RAPPacket:
     def __init__(self, packet: bytes, debug=False):
 
         self.packet = packet
+        self.packet_seqnum = -1
         self.debug = debug
         self.app_payload = 0
         self.app_payload_len = 0
         self.payload_length = len(self.packet)
         self.app_packet_type = APP_RESPONSE_TYPE_UNKNOWN
+        self.app_pkt_info = ''
         self.app_layer_version = 0
         self.steim2 = {
             'byte_cnt': 0,
@@ -119,7 +121,11 @@ class RAPPacket:
 
             # get payload and check length is what we expect
             self.segment_payload_raw = self.packet[12:12+self.segment_length]
-            if len(self.segment_payload_raw) < self.segment_length:
+            if (len(self.segment_payload_raw) < self.segment_length) or \
+                (len(self.packet) < self.segment_length + 12 + 2):   ## If segment length from header less than the actual length
+                                                                     ##  or
+                                                                     ## not enough bytes in packet for segment CRC
+                                                                     ## then incomplete packet
                 print("ERROR: Incomplete Segment {} vs {}. Skipping packet".format(len(self.segment_payload_raw) , self.segment_length))
                 self.incomplete_packet = True
 
@@ -127,6 +133,7 @@ class RAPPacket:
             if not (self.crc_bad or self.incomplete_packet):
 
                 # Check payload CRC
+                #print('self.packet length: {}; segment_length: {}'.format(len(self.packet), self.segment_length))
                 self.segment_payload_crc = struct.unpack_from('!H', self.packet, 12+self.segment_length)[0]
                 this_payload_crc = self.crcPegasus(self.segment_payload_raw)
                 if self.segment_payload_crc == this_payload_crc:
@@ -419,8 +426,8 @@ class RAPPacket:
                 apphdr_info += 'Packet Type: ' + hex(self.app_packet_type) + '\n'
                 apphdr_info += 'Payload Length: ' + str(self.app_payload_len) + '\n'
 
-        # packet details (except seismic binary payload)
-        pkt_info = self.packet_details()
+            # packet details (except seismic binary payload)
+            pkt_info = self.packet_details()
 
         return xporthdr_info + apphdr_info + pkt_info
     

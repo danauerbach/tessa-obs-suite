@@ -26,7 +26,6 @@ def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, ack_topic, 
     def on_connect(client, userdata, flags, rc):
         if rc != 0:
             print(f"{client_id}:on_connect: Bad connection for {client} Returned code: ", rc)
-            client.loop_stop()
 
     def on_disconnect(client, userdata, rc):
         print("client disconnected ok")

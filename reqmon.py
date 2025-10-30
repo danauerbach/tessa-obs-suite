@@ -4,6 +4,7 @@ import argparse
 import base64
 import datetime
 import glob
+import logging
 import os
 from pathlib import Path
 import queue
@@ -18,109 +19,97 @@ import json
 
 import paho.mqtt.client as mqtt
 
-# REQMON_CFG = {
-#     "mqtt": {
-#         "HOST": 'iot.tessa-obs.net',
-#         "PORT": 8883,
-#         "root-CA": 'AmazonRootCA1.pem',
-#         "key": 'tessa-reqmon.private.pem.key',
-#         "cert": 'tessa-reqmon.pem.crt',
-#         "req_topic": 'tessa/req',
-#         "reqack_topic": 'teesa/reqack',
-#         "reqmon_client_id": "tessa-reqmon",
-#         "reqack_client_id": "tessa-reqack",
-#     }
-# }
+
+def validate_request(msg):
+
+    errmsg = ''
+    if not msg.get('rid'):
+        return 'ERR', 'MISSING FIELD: "rid" required in request'
+
+    if not msg.get('sta'):    
+        return 'ERR', 'MISSING FIELD: "sta" required in request'
+        
+    if not msg.get('beg'):    
+        return 'ERR', 'MISSING FIELD: "beg" required in request'
+
+    if not msg.get('end'):    
+        return 'ERR', 'MISSING FIELD: "end" required in request'
+
+    if not msg.get('chnbm'):    
+        return 'ERR', 'MISSING FIELD: "chnbm" required in request'
+
+    begts = msg.get('beg')
+    endts = msg.get('end')
+    if begts > endts:
+        return 'ERR', 'BEG date later than END date'
+
+    if msg.get('chnbm') not in range(1,16):
+        return 'ERR', 'CHNBM invalid. must be 1-15'
+
+    return 'OK', ''
+
 
 
 def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, req_topic, req_q):
 
-    def validate_request(msg):
+    logger = logging.getLogger("reqmon")
 
-        errmsg = ''
-        if not msg.get('rid'):
-            return 'ERR', 'MISSING FIELD: "rid" required in request'
-
-        if not msg.get('sta'):    
-            return 'ERR', 'MISSING FIELD: "sta" required in request'
-            
-        if not msg.get('beg'):    
-            return 'ERR', 'MISSING FIELD: "beg" required in request'
-
-        if not msg.get('end'):    
-            return 'ERR', 'MISSING FIELD: "end" required in request'
-
-        if not msg.get('chnbm'):    
-            return 'ERR', 'MISSING FIELD: "chnbm" required in request'
-
-        begts = msg.get('beg')
-        endts = msg.get('end')
-        if begts > endts:
-            return 'ERR', 'BEG date later than END date'
-
-        if msg.get('chnbm') not in range(1,16):
-            return 'ERR', 'CHNBM invalid. must be 1-15'
-
-        return 'OK', ''
 
     def on_message(client, userdata, message):
 
-        msg_str = message.payload.decode('utf-8')
-        print('reqmon:on_msg:', msg_str)
-        msg_dict = json.loads(msg_str)
-        
-        msgres, errmsg = validate_request(msg_dict)
-        msg_dict['status'] = msgres
-        msg_dict['errmsg'] = errmsg
-        msg_dict['rcvd_ts'] = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+        try:
+            msg_str = message.payload.decode('utf-8')
+            msg_dict = json.loads(msg_str)
+            req_q.put(msg_dict)
 
-        req_q.put(msg_dict)
+        except Exception as e:
+            # Never let an exception escape a callback
+            print("reqmon:ON_MESSAGE ERROR:", e)
+            # optionally publish an error ack, but keep it short & non-blocking
 
     def on_connect(client, userdata, flags, rc):
-        if rc != 0:
-            print("reqmon:on_connect: Bad connection for {} Returned code: {}".format(client, rc))
-            client.loop_stop()
-        else:
-            print('reqmon:connected')
-            res, _ = client.subscribe(req_topic, qos=1)
+        try:
+            if rc != 0:
+                print("reqmon:ON_CONNECT error rc={} (will auto-retry)".format(rc))
+                return
+
+            res, mid = client.subscribe(req_topic, qos=1)
             if res != mqtt.MQTT_ERR_SUCCESS:
-                print('client {}: ERROR subscribing to {}'.format(client_id, req_topic))
-                print('shutting down')
-                # quit_evt.set()
-                time.sleep(.25)
-                return None
-            else:
-                print("client {}: connected and subscribed to topic {}".format(client_id, req_topic))
+                print("ERROR subscribing to {}: {}".format(req_topic, res))
+
+            logger.error("reqmon:ON_CONNECT rc={}".format(rc))
+            if rc in (4, 5):
+                threading.Timer(5.0, client.reconnect).start()
+
+        except Exception as e:
+            logger.error("reqmon:on_connect ERROR:", e)
+
 
     def on_disconnect(client, userdata, rc):
-        print("client disconnected ok")
+        logger.warning("reqmon:ON_DISCONNECT rc={}".format(rc))
 
     def on_subscribe(client, userdata, mid, granted_qos):
-        print("Subscribed: "+str(mid)+" "+str(granted_qos))
+        logger.info("Subscribed: "+str(mid)+" "+str(granted_qos))
 
     def on_publish(client, userdata, mid):
-        print("reqmon:on_publish: {} mid= ".format(client,mid))
+        logger.info("reqmon:on_publish: " + str(mid) + " published successfully.")
 
 
-    reqmon_client = mqtt.Client(client_id=client_id)
+    reqmon_client = mqtt.Client(client_id=client_id, clean_session=False, protocol=mqtt.MQTTv311)
+    # reqmon_client.tls_set_context(ctx)
+    reqmon_client.enable_logger()
     reqmon_client.tls_set(root_ca, certfile=cert, keyfile=key, tls_version=ssl.PROTOCOL_TLSv1_2, cert_reqs=ssl.CERT_REQUIRED)
+    reqmon_client.tls_insecure_set(False)            # don’t bypass verification
     reqmon_client.on_connect = on_connect
     reqmon_client.on_disconnect = on_disconnect
     reqmon_client.on_subscribe = on_subscribe
     reqmon_client.on_publish = on_publish
     reqmon_client.on_message = on_message
-    reqmon_client.connect(endpoint, port, keepalive=600)
-
-    # res, _ = reqmon_client.subscribe(req_topic, qos=1)
-    # if res != mqtt.MQTT_ERR_SUCCESS:
-    #     print('Client {}: ERROR subscribing to {}'.format(client_id, req_topic))
-    #     print('shutting down')
-    #     # quit_evt.set()
-    #     time.sleep(.25)
-    #     return None
-    # else:
-    print('reqmon:paho_client_setup: starting mqtt loop....')
+    reqmon_client.reconnect_delay_set(min_delay=1, max_delay=20)
     reqmon_client.loop_start()
+    time.sleep(0.25)
+    reqmon_client.connect_async(endpoint, port, keepalive=20, clean_start=False)
+    print('reqmon:paho_client_setup: starting mqtt loop....')
 
     return reqmon_client
 
@@ -151,45 +140,49 @@ def interrupt_handler(signum, frame):
     quit_evt.set()
 
     time.sleep(1)
-    # sys.exit(0)
+    sys.exit(0)
 
 
 if __name__ == '__main__':
 
     signal.signal(signal.SIGINT, interrupt_handler)
 
+    logging.basicConfig(
+        level=logging.DEBUG,  # show DEBUG and up
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+    logger = logging.getLogger("reqmon")
+
     aws_dir = os.getenv('TESSA_AWS_DIR')
     if not aws_dir:
-        print('ERROR: TESSA_AWS_DIR env var does not exist. Quitting...', file=sys.stderr)
+        logger.error('ERROR: TESSA_AWS_DIR env var does not exist. Quitting...', file=sys.stderr)
         sys.exit(1)
     
     thing_name = os.getenv('TESSA_WG_THING_NAME')
     if not thing_name:
-        print('ERROR: TESSA_WG_THING_NAME env var does not exist. Quitting....', file=sys.stderr)
+        logger.error('ERROR: TESSA_WG_THING_NAME env var does not exist. Quitting....', file=sys.stderr)
         sys.exit(1)
 
     DATA_ROOT_DIR = os.getenv('TESSA_DATA_ROOT')
     if not DATA_ROOT_DIR:
-        print('ERROR: TESSA_DATA_ROOT env var does not exist. Quitting....', file=sys.stderr)
+        logger.error('ERROR: TESSA_DATA_ROOT env var does not exist. Quitting....', file=sys.stderr)
         sys.exit(1)
-
 
     ENDPOINT = 'iot.tessa-obs.net'
     PORT = 8883
     CERT = os.path.join(aws_dir, thing_name+'.pem.crt')
     KEY = os.path.join(aws_dir, thing_name+'.private.pem.key')
     ROOT_CA = os.path.join(aws_dir, 'AmazonRootCA1.pem')
-
-
     CLIENT_ID = thing_name
     REQ_TOPIC = 'tessa/request'
     ACK_TOPIC = 'tessa/reqack'
 
-    print('reqmon: ENDPOINT: {}', ENDPOINT)
-    print('reqmon: PORT: {}', PORT)
-    print('reqmon: CERT: {}', CERT)
-    print('reqmon:  KEY: {}', KEY)
-    print('reqmon: ROOT: {}', ROOT_CA)
+    print('reqmon: CLIENTID:', CLIENT_ID)
+    print('reqmon: ENDPOINT:', ENDPOINT)
+    print('reqmon: PORT:    ', PORT)
+    print('reqmon: CERT:    ', CERT)
+    print('reqmon:  KEY:    ', KEY)
+    print('reqmon: ROOT:    ', ROOT_CA)
 
     # threadsafe quit flag for qhen something goes wrong in a thread
     quit_evt = threading.Event()
@@ -200,22 +193,30 @@ if __name__ == '__main__':
 
     reqmon_client = paho_client_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY, REQ_TOPIC, req_q)
 
-
     while not quit_evt.is_set():
 
         try:
             req_dict = req_q.get(block=True, timeout=5)
             req_q.task_done()
-            reqmon_client.publish(ACK_TOPIC, json.dumps(req_dict).encode("utf-8"), qos=1)
+
+            msgres, errmsg = validate_request(req_dict)
+            req_dict['status'] = msgres
+            req_dict['errmsg'] = errmsg
+            req_dict['rcvd_ts'] = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+
+            rc, mid = reqmon_client.publish(ACK_TOPIC, json.dumps(req_dict).encode("utf-8"), qos=0)
+            if rc != mqtt.MQTT_ERR_SUCCESS:
+                logger.error("publish to {} failed rc={}".format(ACK_TOPIC, rc))
+
             if req_dict['status'].upper() == 'OK':
                 write_request(DATA_ROOT_DIR, req_dict)
 
         except queue.Empty as e:
-            print('reqmon:main: no msg rcvd')
+            logger.info('reqmon:main: no msg rcvd')
             continue
 
         except Exception as e:
-            print('reqmon:main: ERROR receiving data msg:', e)
+            logger.error('reqmon:main: ERROR receiving data msg:', e)
             continue
 
         # time.sleep(1)
