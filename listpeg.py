@@ -51,7 +51,7 @@ def print_packet_info(rappkt, userdata, debug=False):
 def process_file(filename : str, handlers : list, debug=False):
 
     if debug:
-        print(f'Processing file: {filename}.')
+        print('Processing file: {}.'.format(filename))
 
     with open(fn, 'rb') as pegfl:
 
@@ -67,7 +67,7 @@ def process_file(filename : str, handlers : list, debug=False):
 
             if offset == -1:
                 if not found_first_packet and debug:
-                    print(f"No sync bytes ({SYNC_BYTES}) found in file {filename}.")
+                    print("No sync bytes ({}) found in file {}.".format(SYNC_BYTES, filename))
                 break
 
             pkt_start = pegfl.read(14)  ## read until we get to the SEGMENT_LENGTH in the transport section of the packet.
@@ -79,9 +79,8 @@ def process_file(filename : str, handlers : list, debug=False):
                 pkt_segment_len = struct.unpack_from('!H', pkt_start, 12)[0] + 4
 
                 if debug:
-                    print(f'SEGMENT SEQNUM:                   {struct.unpack_from("!H", pkt_start, 6)[0]}')
-                    print(f'SEGMENT PAYLOAD LEN (+4 for both crc): {pkt_segment_len}')
-
+                    print('SEGMENT SEQNUM:                   {}'.format(struct.unpack_from("!H", pkt_start, 6)[0]))
+                    print('SEGMENT PAYLOAD LEN (+4 for both crc): {}'.format(pkt_segment_len))
                 payload = pegfl.read(pkt_segment_len)
                 if payload:
                     pkt = pkt_start + payload
@@ -90,14 +89,14 @@ def process_file(filename : str, handlers : list, debug=False):
 
             else:
                 if pkt_start:
-                    print(f'UNEXPECTED READ: {pkt_start}')
+                    print('UNEXPECTED READ: {}'.format(pkt_start))
                     print('Looking for SYNC Bytes ("PT02")...')
 
                     offset = move_to_next_packet(pegfl, SYNC_BYTES, offset)
 
                     if offset == -1:
                         if debug:
-                            print(f"No sync bytes ({SYNC_BYTES}) found in rest of the file {filename}.")
+                            print("No sync bytes ({}) found in rest of file {}.".format(SYNC_BYTES, filename))
                 else:
                     if debug:
                         print('Error reading file {filename}.')
@@ -107,7 +106,7 @@ def process_file(filename : str, handlers : list, debug=False):
 
                 rappkt = RAPPacket(pkt[4:], debug)
                 if (seq_num > -1) and (rappkt.seq_num != seq_num + 1):
-                    print(f'{rappkt.packet_seqnum - seq_num:>9} PACKETs MISSING')
+                    print('{} PACKETs MISSING'.format(rappkt.packet_seqnum - seq_num))
 
                 for handler in handlers:
                     handler["method"](rappkt, handler['userdata'], debug)
@@ -115,16 +114,16 @@ def process_file(filename : str, handlers : list, debug=False):
                 # print(pkt_info)
 
             else:
-                print(f'[file: {filename}] Skipping incomplete packet.')
+                print('[file: {}] Skipping incomplete packet.'.format(filename))
 
         if pegfl.tell() < Path(filename).stat().st_size:
-            print(f'File {filename} not read to the end!!!')
+            print('File {} not read to the end!!!'.format(filename))
 
 
 def process_pegraw_file(filename : str, handlers : list, debug=False):
 
     # if debug:
-    print(f'###Processing file: {filename}.')
+    print('###Processing file:', filename)
 
     with open(fn, 'rb') as pegfl:
 
@@ -145,7 +144,7 @@ def process_pegraw_file(filename : str, handlers : list, debug=False):
 
             if offset == -1:
                 if not found_first_packet and debug:
-                    print(f"No sync bytes ({SYNC_BYTES}) found in file {filename}.")
+                    print("No sync bytes ({}) found in file {}.".format(SYNC_BYTES, filename))
                 break
             found_first_packet = True
             
@@ -170,7 +169,7 @@ def process_pegraw_file(filename : str, handlers : list, debug=False):
 
 def teardown_print(userdata):
 
-    print(f'Printed {print_cnt} records.')
+    print('Printed {} records.'.format(print_cnt))
 
 
 if __name__ == '__main__':
@@ -186,7 +185,7 @@ if __name__ == '__main__':
     rec_cnt = 0
     print_cnt = 0
     if args.debug:
-        print(f'FILES: {filelist}')
+        print('FILES:', filelist)
 
     if type(filelist) == str:
         filelist = [filelist]
@@ -209,7 +208,7 @@ if __name__ == '__main__':
             
             if not Path(fn).exists():
                 if debug:
-                    print(f'FILE NOT FOUND: {fn}. Skipping...')
+                    print('FILE NOT FOUND: {}. Skipping...'.format(fn))
                 continue
             fn = Path(fn).absolute()
             if args.json:
