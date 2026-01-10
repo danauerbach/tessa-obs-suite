@@ -10,18 +10,7 @@ import sys
 #from awsiot import mqtt_connection_builder
 
 from utils.rap import RAPPacket
-
-### AWS IOT CONSTANTS
-#CERT = '../../awstests/tessa-wg-dev.cert.pem'
-#KEY = '../../awstests/tessa-wg-dev.private.key'
-#ENDPOINT = 'a1cizoe0dy9v99-ats.iot.us-east-2.amazonaws.com'
-#PORT = 8883
-#ROOT_CA = None
-#CLIENT_ID = 'binary_sender'
-#TOPIC = 'tessa/data/raw'
-
-### RAP CONSTANTS
-SYNC_BYTES = b'PT02'
+from utils.const import SYNC_BYTES
 
 def move_to_next_packet(iobuffer, sync_bytes, start_position=0):
 

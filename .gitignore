@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 
 peg2ms.log
+*.lock
+.*.lock
 
 .DS_Store
 # C extensions

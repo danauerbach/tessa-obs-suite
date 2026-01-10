@@ -1,3 +1,5 @@
+import logging
+from concurrent_log_handler import ConcurrentRotatingFileHandler
 import crcmod
 from datetime import datetime
 import struct
@@ -64,6 +66,16 @@ class RAPPacket:
     SYNC_BYTES = b'PT02'
 
     def __init__(self, packet: bytes, debug=False):
+
+        # set up logging
+        logger = logging.getLogger(__name__)
+        handler = ConcurrentRotatingFileHandler('peg2ms.log', maxBytes=10*1024*1024, backupCount=50)
+        handler.setFormatter(logging.Formatter(
+            fmt="%(asctime)s.%(msecs)03d %(processName)s %(name)s %(levelname)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",    
+        ))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
 
         self.packet = packet
         self.packet_seqnum = -1

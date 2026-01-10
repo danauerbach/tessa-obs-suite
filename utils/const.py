@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+SYNC_BYTES = b'PT02'
+
 TESSA_NETCODE                       = 'XX'
 TESSA_LOCCODE                       = '00'
 
