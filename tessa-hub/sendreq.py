@@ -1,84 +1,101 @@
 #!/usr/bin/env python3
-
 import argparse
 import datetime
 import os
-from pathlib import Path
-import queue
-import signal
-import ssl
+import subprocess
 import sys
 import threading
-import time
 import json
 
-import paho.mqtt.client as mqtt
 
 
-def paho_client_setup(endpoint, port, client_id, root_ca, cert, key, ack_topic, req_q):
+def write_request_file(wgid, stacode, msg_str, req_dir, debug=False):
 
-    def on_message(client, userdata, message):
+    ts = datetime.datetime.now(tz=datetime.timezone.utc).strftime('%Y-%m-%dT%H%M%S')
+    fn = f'req_{wgid}_{stacode}_{ts}.json'
+    filepath = os.path.join(req_dir, fn)
+    os.makedirs(req_dir, mode=0o664, exist_ok=True)
+    if debug:
+        print(f'Writing request file to {filepath}')
+    with open(filepath, 'w') as f:
+        f.write(msg_str+'\n')
 
-        msg_str = message.payload.decode('utf-8')
-        msg_dict = json.loads(msg_str)
-        req_q.put(msg_dict)
-
-    def on_connect(client, userdata, flags, rc):
-        if rc != 0:
-            print(f"{client_id}:on_connect: Bad connection for {client} Returned code: ", rc)
-
-    def on_disconnect(client, userdata, rc):
-        print("client disconnected ok")
-
-    def on_subscribe(client, userdata, mid, granted_qos):
-        print("Subscribed: "+str(mid)+" "+str(granted_qos))
-
-    def on_publish(client, userdata, mid):
-        print(f"{client_id}:on_connect: {client} mid= "  ,mid)
+    return filepath
 
 
-    req_client = mqtt.Client(client_id=client_id)
-    req_client.tls_set(root_ca, certfile=cert, keyfile=key, tls_version=ssl.PROTOCOL_TLSv1_2, cert_reqs=ssl.CERT_REQUIRED)
-    req_client.on_connect = on_connect
-    req_client.on_disconnect = on_disconnect
-    req_client.on_subscribe = on_subscribe
-    req_client.on_publish = on_publish
-    req_client.on_message = on_message
-    req_client.connect(endpoint, port)
+def rsync_req_file(req_file_local, req_file_wg, wg_host, debug=False) -> bool:
+# def run_rsync(src_root, dest, relpaths) -> None:
+    """
+    Use rsync to send the request file to the waveglider host
+    Return True if successful, False if error
+    """
 
-    res, _ = req_client.subscribe(ack_topic, qos=1)
-    if res != mqtt.MQTT_ERR_SUCCESS:
-        print(f'{client_id}: ERROR subscribing to {ack_topic}')
-        print(f'{client_id}: shutting down')
-        # quit_evt.set()
-        time.sleep(.25)
-        return None
-    else:
-        print("starting list loop for topic: ", ack_topic)
-        req_client.loop_start()
+    if not req_file_local or not os.path.isfile(req_file_local):
+        print('Local request file {} does not exist.'.format(req_file_local))
+        return False
 
-    return req_client
+    if not req_file_wg:
+        print('Remote request file path must be specified.')
+        return False
+
+    if not wg_host:
+        print('Waveglider hostname or IP must be specified.')
+        return False
+
+    if debug:
+        print(f'rsyncing request file {req_file_local} to waveglider host {wg_host}:{req_file_wg}')
 
 
-def interrupt_handler(signum, frame):
+    cmd = [
+        "rsync",
+        "-vptog",
+        "--partial",
+        "--partial-dir=.rsync-tmp",
+        "--delay-updates",
+        "--timeout=30",
+        "--itemize-changes",
+        "--chown=tessa:tessagroup",
+        "--chmod=D2775,F0664",
+        req_file_local,
+        f'{wg_host}:{req_file_wg}'
+    ]
 
-    quit_evt.set()
-    time.sleep(1)
-    # sys.exit(0)
+    if debug:
+        print('rsync cmd: ', ' '.join(cmd))
+
+    try:
+        # Equivalent to subprocess.run(..., check=True) for this use case
+        # out = subprocess.check_output(cmd) ###, stderr=subprocess.STDOUT)
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode != 0:
+            print(f'rsync failed with return code {res.returncode}')
+            print(f'rsync output: {res.stdout}')
+            return False
+        
+        if debug:
+            print('rsync output:', res.stdout)
+
+        return True
+    
+    except Exception as e:
+        print(f'rsync failed: {e}')
+        return False
 
 
 if __name__ == '__main__':
 
-    signal.signal(signal.SIGINT, interrupt_handler)
-
     parser = argparse.ArgumentParser(description='construct and send data request to topic "tessa/request" and listenf or ACK on topic "tessa/reqack"')
-    parser.add_argument("sta", action='store', help='station code to request data from')
-    parser.add_argument("beg", action='store', help='Start time (iso8660) of requested data segment')
-    parser.add_argument("end", action='store', help='End time (iso8660) of requested data segment')
-    parser.add_argument("chnbm", action='store', help='Channel bitmap value (4 low order bits: 1-15)')
+    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug/verbose mode")
+    parser.add_argument("wgid", action="store", help="Waveglider ID (e.g. 'WG1' and Env var TESSA_WG1_HOST must be defined", required=True)
+    parser.add_argument("sta", action='store', help='station code to request data from', required=True)
+    parser.add_argument("beg", action='store', help='Start time (iso8660) of requested data segment', required=True)
+    parser.add_argument("end", action='store', help='End time (iso8660) of requested data segment', required=True)
+    parser.add_argument("chnbm", action='store', help='Channel bitmap value (4 low order bits: 1-15)', required=True)
 
     args = parser.parse_args()
 
+    debug = args.debug
+    wgid = args.wgid.upper()
     sta = args.sta.upper()
     beg = args.beg.upper()
     if not beg.endswith('Z'):
@@ -101,65 +118,34 @@ if __name__ == '__main__':
         'reqts': datetime.datetime.now().isoformat(timespec='seconds').replace(':', '')
     }
 
-    msg_str = json.dumps(msg)
-    print(f'msg_str: {msg_str}')
+    msg_jstr = json.dumps(msg)
+    print(f'msg_str: {msg_jstr}')
 
-
-    aws_dir = os.getenv('TESSA_AWS_DIR')
-    if not aws_dir:
-        print('ERROR: TESSA_AWS_DIR env var does not exist. Quitting...', file=sys.stderr)
-        sys.exit(1)
-    
-    thing_name = os.getenv('TESSA_WG_THING_NAME')
-    if not thing_name:
-        print('ERROR: TESSA_WG_THING_NAME env var does not exist. Quitting....', file=sys.stderr)
+    TESSA_HUB_DATA_ROOT = os.getenv('TESSA_HUB_DATA_ROOT')
+    if not TESSA_HUB_DATA_ROOT:
+        print('ERROR: TESSA_HUB_DATA_ROOT env var does not exist. Quitting...', file=sys.stderr)
         sys.exit(1)
 
-    ENDPOINT = 'iot.tessa-obs.net'
-    PORT = 8883
-    CERT = os.path.join(aws_dir, f'{thing_name}.pem.crt')
-    KEY = os.path.join(aws_dir, f'{thing_name}.private.pem.key')
-    ROOT_CA = os.path.join(aws_dir, 'AmazonRootCA1.pem')
+    TESSA_WG_DATA_ROOT = os.getenv('TESSA_WG_DATA_ROOT')
+    if not TESSA_WG_DATA_ROOT:
+        print('ERROR: TESSA_WG_DATA_ROOT env var does not exist. Quitting....', file=sys.stderr)
+        sys.exit(1)
 
-    CLIENT_ID = thing_name
-    REQ_TOPIC = 'tessa/request'
-    ACK_TOPIC = 'tessa/reqack'
+    wg_host = os.getenv(f'TESSA_{wgid}_HOST')
+    if not wg_host:
+        print(f'ERROR: TESSA_{wgid}_HOST env var does not exist. Quitting....', file=sys.stderr)
+        sys.exit(1)
 
-    # threadsafe quit flag for qhen something goes wrong in a thread
-    quit_evt = threading.Event()
+    req_dir_local = os.path.join(TESSA_HUB_DATA_ROOT, wgid, sta, 'requests')
+    req_file_wg = os.path.join(TESSA_WG_DATA_ROOT, sta, 'requests')
+    req_file_local = write_request_file(wgid, sta, msg_jstr, req_dir_local, False)
 
-    # threadsafe way to pass incoming requests from paho internal loop thread 
-    # to main thread that writes to disk and sends ack
-    req_q = queue.Queue()
+    ok = rsync_req_file(req_file_local, req_file_wg, wg_host, debug)
+    if ok:
+        print('Request transferred successfully')
+    else:
+        print('ERROR transferring requested file ()')
 
-    req_client = paho_client_setup(ENDPOINT, PORT, CLIENT_ID, ROOT_CA, CERT, KEY, ACK_TOPIC, req_q)
-
-    req_client.publish(REQ_TOPIC, payload=msg_str.encode('utf-8'), qos=1)
-
-    while not quit_evt.is_set():
-
-        try:
-            req_dict = req_q.get(block=True, timeout=1)
-            req_q.task_done()
-            if rid == req_dict.get('rid'):
-                if req_dict.get('status').upper() != 'OK':
-                    print(f"ERROR Parsing Request: {req_dict.get('errmsg')}")
-                else:
-                    print('Request successfully received')
-                quit_evt.set()
-
-        except queue.Empty as e:
-            print(f'No ACK received yet....')
-            continue
-
-        except Exception as e:
-            print(f'reqmon:main: ERROR receiving data msg: {e}')
-            continue
-      
-        time.sleep(1)
-
-    # gives threads a chance to exit cleanly    
-    req_client.loop_stop()
 
 
 
