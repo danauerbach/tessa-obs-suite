@@ -6,7 +6,7 @@ TESSA_NETCODE                       = 'XX'
 TESSA_LOCCODE                       = '00'
 
 ########################################################
-# FOR each station and sample rate provide chan-codes for each pegasus chan ndx (1-4)
+# FOR each STATION and sample rate provide chan-codes for each pegasus chan ndx (1-4)
 # {
 #     "sta-code": {
 #         '<samplerate-int>': {
