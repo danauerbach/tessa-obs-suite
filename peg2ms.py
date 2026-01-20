@@ -4,10 +4,8 @@ import datetime
 import glob
 import logging
 import os
-from os.path import normpath
 from pathlib import Path
 import struct
-import time
 
 from concurrent_log_handler import ConcurrentRotatingFileHandler
 
@@ -213,6 +211,8 @@ if __name__ == "__main__":
     sta_ms_dir = ms_file.parent
     os.makedirs(sta_ms_dir, mode=0o775, exist_ok=True)
     logger.info(f'Output Miniseed file: {str(ms_file)}')
+    if debug:
+        print(f'Output Miniseed file: {str(ms_file)}')
 
     p = Path(sta_dir)
     stacode = p.parts[-1] # get station code from station component of sta_raw_dir path
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     logger.info(f'Raw (peg) directory: {sta_raw_dir}')
     logger.info(f' Miniseed directory: {sta_ms_dir}')
 
-    peg_file_glob: str = f'{sta_dir}/raw/2026-01-1?/*.peg'
+    peg_file_glob: str = f'{sta_dir}/raw/*/*.peg'
     logger.info(f'Processing station .peg files: {peg_file_glob}')
 
     peg_files_list: list = glob.glob(peg_file_glob)
