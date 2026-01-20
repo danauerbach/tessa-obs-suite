@@ -34,6 +34,8 @@ MANIFEST
 # packages/files just for lambda
 lambda-packages/
 deployment_package.zip
+*.log
+*.log.*
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
