@@ -1,6 +1,6 @@
 import io
 from typing import Tuple
-from mseedlib import MSTraceList, DataEncoding
+from pymseed import MS3TraceList, DataEncoding
 from simplemseed import steim2
 
 class MSManager():
@@ -19,7 +19,7 @@ class MSManager():
         self.sample_rate = 0
         self.source_id = ''
 
-        self.ms_tracelist = MSTraceList()
+        self.ms_tracelist = MS3TraceList()
         self.ms_recsize = 0
 
     def __str__(self):
@@ -137,7 +137,6 @@ class MSManager():
             else:
                 return
 
-            # print(f"adding data... sample cnt: {len(data_samples)}")
             self.ms_tracelist.add_data(
                 sourceid=self.source_id,
                 data_samples=data_samples,
