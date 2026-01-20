@@ -86,11 +86,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='construct and send data request to topic "tessa/request" and listenf or ACK on topic "tessa/reqack"')
     parser.add_argument("--debug", "-d", action="store_true", help="Enable debug/verbose mode")
-    parser.add_argument("wgid", action="store", help="Waveglider ID (e.g. 'WG1' and Env var TESSA_WG1_HOST must be defined", required=True)
-    parser.add_argument("sta", action='store', help='station code to request data from', required=True)
-    parser.add_argument("beg", action='store', help='Start time (iso8660) of requested data segment', required=True)
-    parser.add_argument("end", action='store', help='End time (iso8660) of requested data segment', required=True)
-    parser.add_argument("chnbm", action='store', help='Channel bitmap value (4 low order bits: 1-15)', required=True)
+    parser.add_argument("wgid", action="store", help="Waveglider ID (e.g. 'WG1' and Env var TESSA_WG1_HOST must be defined")
+    parser.add_argument("sta", action='store', help='station code to request data from')
+    parser.add_argument("beg", action='store', help='Start time (iso8660) of requested data segment')
+    parser.add_argument("end", action='store', help='End time (iso8660) of requested data segment')
+    parser.add_argument("chnbm", action='store', help='Channel bitmap value (4 low order bits: 1-15)')
 
     args = parser.parse_args()
 
