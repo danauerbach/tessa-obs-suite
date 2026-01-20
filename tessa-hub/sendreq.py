@@ -49,7 +49,9 @@ def rsync_req_file(req_file_local, req_file_wg, wg_host, debug=False, sshport=22
     cmd = [
         "rsync",
         f"--port={sshport}",
-        "-vptog",
+        f'-e "ssh -p {sshport}"',
+        "-ptog",
+        "-vvv",
         "--partial",
         "--partial-dir=.rsync-tmp",
         "--delay-updates",
