@@ -14,7 +14,7 @@ def write_request_file(wgid, stacode, msg_str, req_dir, debug=False):
     ts = datetime.datetime.now(tz=datetime.timezone.utc).strftime('%Y-%m-%dT%H%M%S')
     fn = f'req_{wgid}_{stacode}_{ts}.json'
     filepath = os.path.join(req_dir, fn)
-    os.makedirs(req_dir, mode=0o664, exist_ok=True)
+    os.makedirs(req_dir, mode=0o775, exist_ok=True)
     if debug:
         print(f'Writing request file to {filepath}')
     with open(filepath, 'w') as f:
