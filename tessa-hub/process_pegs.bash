@@ -42,7 +42,7 @@ cd /home/tessa/dev/tessa
 source venv/bin/activate
 
 cd tessa-obs-suite
-./peg2ms.py -d "${STA_ROOT}" "${MS_FILE}"
+./peg2ms.py "${STA_ROOT}" "${MS_FILE}"
 
 mkdir -p "${MS_TMP_PATH}/archived/"
 
