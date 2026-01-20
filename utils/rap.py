@@ -146,7 +146,6 @@ class RAPPacket:
             if not (self.crc_bad or self.incomplete_packet):
 
                 # Check payload CRC
-                #print('self.packet length: {}; segment_length: {}'.format(len(self.packet), self.segment_length))
                 self.segment_payload_crc = struct.unpack_from('!H', self.packet, 12+self.segment_length)[0]
                 this_payload_crc = self.crcPegasus(self.segment_payload_raw)
                 if self.segment_payload_crc == this_payload_crc:
