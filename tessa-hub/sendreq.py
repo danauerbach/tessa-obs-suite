@@ -23,7 +23,7 @@ def write_request_file(wgid, stacode, msg_str, req_dir, debug=False):
     return filepath
 
 
-def rsync_req_file(req_file_local, req_file_wg, wg_host, debug=False) -> bool:
+def rsync_req_file(req_file_local, req_file_wg, wg_host, debug=False, sshport=22) -> bool:
 # def run_rsync(src_root, dest, relpaths) -> None:
     """
     Use rsync to send the request file to the waveglider host
@@ -48,6 +48,7 @@ def rsync_req_file(req_file_local, req_file_wg, wg_host, debug=False) -> bool:
 
     cmd = [
         "rsync",
+        f"--port={sshport}"
         "-vptog",
         "--partial",
         "--partial-dir=.rsync-tmp",
@@ -91,10 +92,12 @@ if __name__ == '__main__':
     parser.add_argument("beg", action='store', help='Start time (iso8660) of requested data segment')
     parser.add_argument("end", action='store', help='End time (iso8660) of requested data segment')
     parser.add_argument("chnbm", action='store', help='Channel bitmap value (4 low order bits: 1-15)')
+    parser.add_argument("--port", "-p", action="store", type=int, default=22, help="SSH port for rsync (default: 22)")
 
     args = parser.parse_args()
 
     debug = args.debug
+    sshport = args.port
     wgid = args.wgid.upper()
     sta = args.sta.upper()
     beg = args.beg.upper()
@@ -140,7 +143,7 @@ if __name__ == '__main__':
     req_file_wg = os.path.join(TESSA_WG_DATA_ROOT, sta, 'requests')
     req_file_local = write_request_file(wgid, sta, msg_jstr, req_dir_local, False)
 
-    ok = rsync_req_file(req_file_local, req_file_wg, wg_host, debug)
+    ok = rsync_req_file(req_file_local, req_file_wg, wg_host, debug=debug, sshport=sshport)
     if ok:
         print('Request transferred successfully')
     else:
