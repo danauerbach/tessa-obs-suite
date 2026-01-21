@@ -22,7 +22,7 @@ def write_request_file(wgid, stacode, msg_str, req_dir, req_fn):
 
 def rsync_req_file(wg_host, req_file_local, req_dir_wg, debug=False, sshport=22) -> bool:
     """
-    Use rsync to send the request file to the waveglider host
+    Use scp to send the request file to the waveglider host
     Return True if successful, False if error
     """
 
@@ -38,16 +38,12 @@ def rsync_req_file(wg_host, req_file_local, req_dir_wg, debug=False, sshport=22)
         print('Waveglider hostname or IP must be specified.')
         return False
 
-    if debug:
-        print(f'rsyncing request file {req_file_local} to waveglider host {wg_host}:{req_dir_wg}')
-
     cmd = [
         "scp",
         "-P {}".format(sshport),
         req_file_local,
         f'{wg_host}:{req_dir_wg}'
     ]
-
 
     if debug:
         print('transfer cmd: ', ' '.join(cmd))
@@ -60,13 +56,10 @@ def rsync_req_file(wg_host, req_file_local, req_dir_wg, debug=False, sshport=22)
             print(f'transfer output: {res.stdout}')
             return False
         
-        if debug:
-            print('transfer output:', res.stdout)
-
         return True
     
     except Exception as e:
-        print(f'rsync failed: {e}')
+        print(f'scp failed: {e}')
         return False
 
 
@@ -114,16 +107,16 @@ if __name__ == '__main__':
         print(f'ERROR: TESSA_{wgid}_HOST env var does not exist. Quitting....', file=sys.stderr)
         sys.exit(1)
 
+    msg_str = "{}, {}, {}, {}, {}\n".format(rid, sta, chnbm, beg, end)
     req_fn = "{}_{}_{}_{}.req".format(wgid, sta, chnbm, rid)
     req_dir = os.path.join(TESSA_HUB_DATA_ROOT, wgid, sta, 'requests')
 
-    msg_str = "{}, {}, {}, {}, {}\n".format(rid, sta, chnbm, beg, end)
-
     req_file_local = write_request_file(wgid, sta, msg_str, req_dir, req_fn)
-    req_dir_wg = os.path.join(TESSA_WG_DATA_ROOT, sta, 'requests') + '/'
+
+    req_dir_wg = os.path.join(TESSA_WG_DATA_ROOT, sta, 'requests')
 
     if debug:
-        print(f'\nWriting request: {msg_str}\n to file: {req_dir_wg}/{req_fn} on waveglider host: {wg_host}\n')
+        print(f'\nWriting request: {msg_str.strip()} to file: {req_dir_wg}/{req_fn} on waveglider host: {wg_host}\n')
 
     ok = rsync_req_file(wg_host, req_file_local, req_dir_wg, debug=debug, sshport=sshport)
     if ok:
