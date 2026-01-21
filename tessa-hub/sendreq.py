@@ -18,8 +18,7 @@ def write_request_file(wgid, stacode, msg_str, req_dir, req_fn, debug=False):
     filepath = os.path.join(req_dir, req_fn)
 
     with open(filepath, 'wt') as reqfl:
-        reqrec = "{}, {}, {}, {}, {}, {}\n".format(rid, wgid, stacode, chnbm, beg, end)
-        reqfl.write(reqrec)
+        reqfl.write(msg_str)
 
     return filepath
 
@@ -84,7 +83,6 @@ if __name__ == '__main__':
     parser.add_argument("end", action='store', help='End time (iso8660) of requested data segment')
     parser.add_argument("chnbm", action='store', help='Channel bitmap value (4 low order bits: 1-15)')
     parser.add_argument("--port", "-p", action="store", type=int, default=22, help="Custom SSH port (default: 22)")
-
     args = parser.parse_args()
 
     debug = args.debug
