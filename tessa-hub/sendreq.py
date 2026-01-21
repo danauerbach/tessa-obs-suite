@@ -9,13 +9,10 @@ import json
 
 
 
-def write_request_file(wgid, stacode, msg_str, req_dir, req_fn, debug=False):
+def write_request_file(wgid, stacode, msg_str, req_dir, req_fn):
 
     os.makedirs(req_dir, mode=0o775, exist_ok=True)
     filepath = os.path.join(req_dir, req_fn)
-
-    if debug:
-        print(f'Writing request: {msg_str}\n to file {filepath}')
 
     with open(filepath, 'wt') as reqfl:
         reqfl.write(msg_str)
@@ -121,11 +118,12 @@ if __name__ == '__main__':
     req_dir = os.path.join(TESSA_HUB_DATA_ROOT, wgid, sta, 'requests')
 
     msg_str = "{}, {}, {}, {}, {}\n".format(rid, sta, chnbm, beg, end)
-    if debug:
-        print(f'msg_str: {msg_str}')
 
-    req_file_local = write_request_file(wgid, sta, msg_str, req_dir, req_fn, debug=debug)
+    req_file_local = write_request_file(wgid, sta, msg_str, req_dir, req_fn)
     req_dir_wg = os.path.join(TESSA_WG_DATA_ROOT, sta, 'requests') + '/'
+
+    if debug:
+        print(f'\nWriting request: {msg_str}\n to file: {req_dir_wg}/{req_fn} on waveglider host: {wg_host}\n')
 
     ok = rsync_req_file(wg_host, req_file_local, req_dir_wg, debug=debug, sshport=sshport)
     if ok:
