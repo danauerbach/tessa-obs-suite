@@ -9,22 +9,22 @@ import json
 
 
 
-def write_request_file(wgid, stacode, msg_str, req_dir, debug=False):
+def write_request_file(wgid, stacode, msg_str, req_dir, req_fn, debug=False):
 
-    ts = datetime.datetime.now(tz=datetime.timezone.utc).strftime('%Y-%m-%dT%H%M%S')
-    fn = f'req_{wgid}_{stacode}_{ts}.json'
-    filepath = os.path.join(req_dir, fn)
-    os.makedirs(req_dir, mode=0o775, exist_ok=True)
     if debug:
         print(f'Writing request file to {filepath}')
-    with open(filepath, 'w') as f:
-        f.write(msg_str+'\n')
+
+    os.makedirs(req_dir, mode=0o775, exist_ok=True)
+    filepath = os.path.join(req_dir, req_fn)
+
+    with open(filepath, 'wt') as reqfl:
+        reqrec = "{}, {}, {}, {}, {}, {}\n".format(rid, wgid, stacode, chnbm, beg, end)
+        reqfl.write(reqrec)
 
     return filepath
 
 
-def rsync_req_file(req_file_local, req_file_wg, wg_host, debug=False, sshport=22) -> bool:
-# def run_rsync(src_root, dest, relpaths) -> None:
+def rsync_req_file(wg_host, req_file_local, req_dir_wg, debug=False, sshport=22) -> bool:
     """
     Use rsync to send the request file to the waveglider host
     Return True if successful, False if error
@@ -34,7 +34,7 @@ def rsync_req_file(req_file_local, req_file_wg, wg_host, debug=False, sshport=22
         print('Local request file {} does not exist.'.format(req_file_local))
         return False
 
-    if not req_file_wg:
+    if not req_dir_wg:
         print('Remote request file path must be specified.')
         return False
 
@@ -43,40 +43,29 @@ def rsync_req_file(req_file_local, req_file_wg, wg_host, debug=False, sshport=22
         return False
 
     if debug:
-        print(f'rsyncing request file {req_file_local} to waveglider host {wg_host}:{req_file_wg}')
-
+        print(f'rsyncing request file {req_file_local} to waveglider host {wg_host}:{req_dir_wg}')
 
     cmd = [
-        "rsync",
-        f"--port={sshport}",
-        f'-e "ssh -p {sshport}"',
-        "-ptog",
-        "-vvv",
-        "--partial",
-        "--partial-dir=.rsync-tmp",
-        "--delay-updates",
-        "--timeout=30",
-        "--itemize-changes",
-        "--chown=tessa:tessagroup",
-        "--chmod=D2775,F0664",
+        "scp",
+        "-P {}".format(sshport),
         req_file_local,
-        f'{wg_host}:{req_file_wg}'
+        f'{wg_host}:{req_dir_wg}'
     ]
 
+
     if debug:
-        print('rsync cmd: ', ' '.join(cmd))
+        print('transfer cmd: ', ' '.join(cmd))
 
     try:
         # Equivalent to subprocess.run(..., check=True) for this use case
-        # out = subprocess.check_output(cmd) ###, stderr=subprocess.STDOUT)
-        res = subprocess.run(cmd, capture_output=True, text=True)
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, text=True)
         if res.returncode != 0:
-            print(f'rsync failed with return code {res.returncode}')
-            print(f'rsync output: {res.stdout}')
+            print(f'transfer failed with return code {res.returncode}')
+            print(f'transfer output: {res.stdout}')
             return False
         
         if debug:
-            print('rsync output:', res.stdout)
+            print('transfer output:', res.stdout)
 
         return True
     
@@ -94,7 +83,7 @@ if __name__ == '__main__':
     parser.add_argument("beg", action='store', help='Start time (iso8660) of requested data segment')
     parser.add_argument("end", action='store', help='End time (iso8660) of requested data segment')
     parser.add_argument("chnbm", action='store', help='Channel bitmap value (4 low order bits: 1-15)')
-    parser.add_argument("--port", "-p", action="store", type=int, default=22, help="SSH port for rsync (default: 22)")
+    parser.add_argument("--port", "-p", action="store", type=int, default=22, help="Custom SSH port (default: 22)")
 
     args = parser.parse_args()
 
@@ -114,17 +103,6 @@ if __name__ == '__main__':
 
     rid = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
 
-    msg = {
-        'rid': rid,
-        'sta': sta,
-        'beg': begep,
-        'end': endep,
-        'chnbm': chnbm,
-        'reqts': datetime.datetime.now().isoformat(timespec='seconds').replace(':', '')
-    }
-
-    msg_jstr = json.dumps(msg)
-    print(f'msg_str: {msg_jstr}')
 
     TESSA_HUB_DATA_ROOT = os.getenv('TESSA_HUB_DATA_ROOT')
     if not TESSA_HUB_DATA_ROOT:
@@ -141,11 +119,17 @@ if __name__ == '__main__':
         print(f'ERROR: TESSA_{wgid}_HOST env var does not exist. Quitting....', file=sys.stderr)
         sys.exit(1)
 
-    req_dir_local = os.path.join(TESSA_HUB_DATA_ROOT, wgid, sta, 'requests')
-    req_file_wg = os.path.join(TESSA_WG_DATA_ROOT, sta, 'requests')
-    req_file_local = write_request_file(wgid, sta, msg_jstr, req_dir_local, False)
+    req_fn = "{}_{}_{}_{}.reqXXXX".format(wgid, sta.upper(), chnbm, rid)
+    req_dir = os.path.join(TESSA_HUB_DATA_ROOT, wgid, sta, 'requests')
 
-    ok = rsync_req_file(req_file_local, req_file_wg, wg_host, debug=debug, sshport=sshport)
+    msg_str = "{}, {}, {}, {}, {}, {}\n".format(rid, wgid, sta, chnbm, beg, end)
+    if debug:
+        print(f'msg_str: {msg_str}')
+
+    req_file_local = write_request_file(wgid, sta, msg_str, req_dir, req_fn, debug=debug)
+    req_dir_wg = os.path.join(TESSA_WG_DATA_ROOT, sta, 'requests') + '/'
+
+    ok = rsync_req_file(wg_host, req_file_local, req_dir_wg, debug=debug, sshport=sshport)
     if ok:
         print('Request transferred successfully')
     else:
