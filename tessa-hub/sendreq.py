@@ -11,11 +11,11 @@ import json
 
 def write_request_file(wgid, stacode, msg_str, req_dir, req_fn, debug=False):
 
-    if debug:
-        print(f'Writing request file to {filepath}')
-
     os.makedirs(req_dir, mode=0o775, exist_ok=True)
     filepath = os.path.join(req_dir, req_fn)
+
+    if debug:
+        print(f'Writing request: {msg_str}\n to file {filepath}')
 
     with open(filepath, 'wt') as reqfl:
         reqfl.write(msg_str)
