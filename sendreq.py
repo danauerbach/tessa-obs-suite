@@ -109,7 +109,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     msg_str = "{}, {}, {}, {}, {}\n".format(rid, sta, chnbm, beg, end)
-    req_fn = "{}_{}_.req".format(sta, rid)
+    req_fn = "{}_{}.req".format(sta, rid)
     req_dir = os.path.join(TESSA_HUB_DATA_ROOT, wgid, sta, 'requests')
 
     req_file_local = write_request_file(msg_str, req_dir, req_fn)
