@@ -115,8 +115,7 @@ if __name__ == '__main__':
 
     req_dir_wg = os.path.join(TESSA_WG_DATA_ROOT, sta, 'requests')
 
-    if debug:
-        print(f'\nWriting request: {msg_str.strip()} to file: {req_dir_wg}/{req_fn} on waveglider host: {wg_host}\n')
+    print(f'\nWriting request:\n"{msg_str.strip()}"\nto file: {req_dir_wg}/{req_fn} on waveglider host: {wg_host}\n')
 
     ok = rsync_req_file(wg_host, req_file_local, req_dir_wg, debug=debug, sshport=sshport)
     if ok:
