@@ -117,10 +117,10 @@ if __name__ == '__main__':
         print(f'ERROR: TESSA_{wgid}_HOST env var does not exist. Quitting....', file=sys.stderr)
         sys.exit(1)
 
-    req_fn = "{}_{}_{}_{}.reqXXXX".format(wgid, sta.upper(), chnbm, rid)
+    req_fn = "{}_{}_{}_{}.req".format(wgid, sta, chnbm, rid)
     req_dir = os.path.join(TESSA_HUB_DATA_ROOT, wgid, sta, 'requests')
 
-    msg_str = "{}, {}, {}, {}, {}, {}\n".format(rid, wgid, sta, chnbm, beg, end)
+    msg_str = "{}, {}, {}, {}, {}\n".format(rid, sta, chnbm, beg, end)
     if debug:
         print(f'msg_str: {msg_str}')
 
