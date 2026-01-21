@@ -130,13 +130,9 @@ if __name__ == '__main__':
     # parser.add_argument("fileglob", action="store", nargs='+', help="filename(s) to read")
 
     args = parser.parse_args()
-    # filelist = args.fileglob
     debug = args.debug
 
-    xfer_dirs = []
-    xfer_dirs.append(os.path.join(WG_DATA_ROOT_DIR, "*/raw/????-??-??/*.peg"))
-    # xfer_dirs.append(os.path.join(WG_DATA_ROOT_DIR, "*/log/????-??-??/*.peg"))
-    # xfer_dirs.append(os.path.join(WG_DATA_ROOT_DIR, "*/requests/????-??-??/*.peg"))
+    xfer_dirs = os.path.join(WG_DATA_ROOT_DIR, "*/raw/????-??-??/*.peg")
 
     dest_dir = 'tessa@{ENDPOINT}:{TESSA_HUB_DATA_ROOT}/{WG_ID}/'.format(
         ENDPOINT=ENDPOINT,
@@ -145,27 +141,26 @@ if __name__ == '__main__':
 
     while True:
 
-        for dirndx in range(0, len(xfer_dirs)):
-            # get all files in: $WG_DATA_ROOT_DIR/<STACODE>/raw/<yyyy-mm-dd>/*.peg
-            filelist = glob.glob(xfer_dirs[dirndx])
-            
-            if filelist:
+        # get all files in: $WG_DATA_ROOT_DIR/<STACODE>/raw/<yyyy-mm-dd>/*.peg
+        filelist = glob.glob(xfer_dirs)
+        
+        if filelist:
 
-                filelist.sort()
-                rel_filelist = [Path(p).relative_to(WG_DATA_ROOT_DIR).as_posix() for p in filelist]
-                run_rsync(WG_DATA_ROOT_DIR, dest_dir, rel_filelist)
+            filelist.sort()
+            rel_filelist = [Path(p).relative_to(WG_DATA_ROOT_DIR).as_posix() for p in filelist]
+            run_rsync(WG_DATA_ROOT_DIR, dest_dir, rel_filelist)
 
-                if args.debug:
-                    print('FILES: {}'.format(filelist))
+            if args.debug:
+                print('FILES: {}'.format(filelist))
 
-                for fn in filelist:
+            for fn in filelist:
 
-                    if not Path(fn).exists():
-                        if debug:
-                            print('FILE NOT FOUND: {fn}. Skipping...'.format(fn=fn))
-                        continue
-                    fn = Path(fn).absolute()
-                    move_file_to_sent(fn)
+                if not Path(fn).exists():
+                    if debug:
+                        print('FILE NOT FOUND: {fn}. Skipping...'.format(fn=fn))
+                    continue
+                fn = Path(fn).absolute()
+                move_file_to_sent(fn)
 
         time.sleep(15)
 
