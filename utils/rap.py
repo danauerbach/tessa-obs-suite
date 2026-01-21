@@ -3,7 +3,7 @@ from concurrent_log_handler import ConcurrentRotatingFileHandler
 import crcmod
 from datetime import datetime
 import struct
-from const import SYNC_BYTES
+from .const import SYNC_BYTES
 
 
 
