@@ -89,7 +89,8 @@ if __name__ == '__main__':
     endep = datetime.datetime.fromisoformat(end).timestamp()
     chnbm = int(args.chnbm)
 
-    rid = datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+    rid = round(datetime.datetime.now(tz=datetime.timezone.utc).timestamp(), 2)
+    rid = f'{datetime.datetime.now(tz=datetime.timezone.utc).timestamp():12.2f}'.strip()
 
 
     TESSA_HUB_DATA_ROOT = os.getenv('TESSA_HUB_DATA_ROOT')
