@@ -9,7 +9,7 @@ import json
 
 
 
-def write_request_file(wgid, stacode, msg_str, req_dir, req_fn):
+def write_request_file(msg_str, req_dir, req_fn):
 
     os.makedirs(req_dir, mode=0o775, exist_ok=True)
     filepath = os.path.join(req_dir, req_fn)
@@ -109,10 +109,10 @@ if __name__ == '__main__':
         sys.exit(1)
 
     msg_str = "{}, {}, {}, {}, {}\n".format(rid, sta, chnbm, beg, end)
-    req_fn = "{}_{}_{}_{}.req".format(wgid, sta, chnbm, rid)
+    req_fn = "{}_{}_.req".format(sta, rid)
     req_dir = os.path.join(TESSA_HUB_DATA_ROOT, wgid, sta, 'requests')
 
-    req_file_local = write_request_file(wgid, sta, msg_str, req_dir, req_fn)
+    req_file_local = write_request_file(msg_str, req_dir, req_fn)
 
     req_dir_wg = os.path.join(TESSA_WG_DATA_ROOT, sta, 'requests')
 
